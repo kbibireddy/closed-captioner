@@ -128,7 +128,17 @@ struct ContentView: View {
                     
                     HStack {
                         // Bottom left: Mic button
-                        Button(action: {}) {
+                        Button(action: {
+                            if !speechRecognizer.isRecording {
+                                // Start recording
+                                speechRecognizer.isRecording = true
+                                startRecording()
+                            } else {
+                                // Stop recording
+                                speechRecognizer.isRecording = false
+                                stopRecording()
+                            }
+                        }) {
                             Image(systemName: speechRecognizer.isRecording ? "mic.fill" : "mic")
                                 .font(.title)
                                 .foregroundColor(colorMode.text)
@@ -140,21 +150,23 @@ struct ContentView: View {
                                 )
                                 .clipShape(Circle())
                         }
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in
-                                    if !speechRecognizer.isRecording {
-                                        speechRecognizer.isRecording = true
-                                        startRecording()
-                                    }
+                        .onLongPressGesture(minimumDuration: 0.0, maximumDistance: 0) {
+                            // Empty handler for tap detection
+                        } onPressingChanged: { pressing in
+                            if pressing {
+                                // Finger down
+                                if !speechRecognizer.isRecording {
+                                    speechRecognizer.isRecording = true
+                                    startRecording()
                                 }
-                                .onEnded { _ in
-                                    if speechRecognizer.isRecording {
-                                        speechRecognizer.isRecording = false
-                                        stopRecording()
-                                    }
+                            } else {
+                                // Finger up
+                                if speechRecognizer.isRecording {
+                                    speechRecognizer.isRecording = false
+                                    stopRecording()
                                 }
-                        )
+                            }
+                        }
                         
                         Spacer()
                         
