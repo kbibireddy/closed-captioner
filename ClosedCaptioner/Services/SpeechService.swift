@@ -43,8 +43,14 @@ class SpeechService: ObservableObject {
             return
         }
         
-        // Stop any existing recognition
-        stopRecognition()
+        // Ensure we're not already recording
+        if isRecording {
+            print("⚠️ Already recording, stopping first")
+            stopRecognition()
+        }
+        
+        // Mark as recording immediately
+        isRecording = true
         
         // Create new recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -97,6 +103,11 @@ class SpeechService: ObservableObject {
     }
     
     private func stopRecognition() {
+        print("🛑 Stopping speech recognition...")
+        
+        // Mark as not recording immediately
+        isRecording = false
+        
         recognitionTask?.finish()
         recognitionRequest?.endAudio()
         
@@ -113,6 +124,8 @@ class SpeechService: ObservableObject {
         recognitionRequest = nil
         recognitionTask = nil
         inputNode = nil
+        
+        print("✅ Speech recognition stopped")
     }
     
     private func addEmojisToText() {

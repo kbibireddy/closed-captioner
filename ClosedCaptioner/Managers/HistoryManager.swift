@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Combine
 
-class HistoryManager {
+class HistoryManager: ObservableObject {
     static let shared = HistoryManager()
     
     @Published var captions: [CaptionText] = []

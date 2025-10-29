@@ -10,7 +10,14 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var speechService = SpeechService()
     @StateObject private var appState = AppStateViewModel()
+    @StateObject private var micController: MicController
     @State private var editedText = ""
+    
+    init() {
+        let speechService = SpeechService()
+        _speechService = StateObject(wrappedValue: speechService)
+        _micController = StateObject(wrappedValue: MicController(speechService: speechService))
+    }
     
     var body: some View {
         ZStack {
@@ -27,14 +34,8 @@ struct ContentView: View {
             
             // Controls overlay
             ControlsView(
-                speechService: speechService,
+                micController: micController,
                 appState: appState,
-                onStartRecording: {
-                    speechService.startRecording()
-                },
-                onStopRecording: {
-                    speechService.stopRecording()
-                },
                 onClear: {
                     appState.clearScreen()
                     speechService.currentText = ""
@@ -81,6 +82,11 @@ struct ContentView: View {
                     // Only show text if there's actual content
                     if !speechService.currentText.isEmpty {
                         CaptionTextDisplay(text: speechService.currentText, colorMode: appState.colorMode)
+                    } else if micController.isRecording {
+                        // Show recording indicator
+                        Text("🎤 Listening...")
+                            .font(.system(size: 60, weight: .black, design: .default))
+                            .foregroundColor(appState.colorMode.text.opacity(0.5))
                     }
                 }
                 

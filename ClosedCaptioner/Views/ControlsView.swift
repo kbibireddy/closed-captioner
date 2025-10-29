@@ -8,10 +8,8 @@
 import SwiftUI
 
 struct ControlsView: View {
-    @ObservedObject var speechService: SpeechService
+    @ObservedObject var micController: MicController
     @ObservedObject var appState: AppStateViewModel
-    let onStartRecording: () -> Void
-    let onStopRecording: () -> Void
     let onClear: () -> Void
     
     var body: some View {
@@ -23,7 +21,7 @@ struct ControlsView: View {
                     Button(action: {
                         appState.toggleKeyboard()
                     }) {
-                        Image(systemName: appState.showKeyboard ? "keyboard" : "keyboard")
+                        Image(systemName: "keyboard")
                             .font(.title2)
                             .foregroundColor(appState.colorMode.text)
                             .padding()
@@ -50,7 +48,6 @@ struct ControlsView: View {
                     .colorMultiply(appState.colorMode.text)
                 }
                 .padding()
-                .zIndex(2)
                 
                 Spacer()
             }
@@ -62,47 +59,51 @@ struct ControlsView: View {
                 Spacer()
                 
                 HStack {
-                    // Bottom left: Mic button
+                    // Bottom left: Mic button - press and hold
                     Button(action: {
-                        if !speechService.isRecording {
-                            onStartRecording()
+                        if !micController.isRecording {
+                            micController.startRecording()
                         } else {
-                            onStopRecording()
+                            micController.stopRecording()
                         }
                     }) {
-                        Image(systemName: speechService.isRecording ? "mic.fill" : "mic")
+                        Image(systemName: micController.isRecording ? "mic.fill" : "mic")
                             .font(.title)
                             .foregroundColor(appState.colorMode.text)
                             .padding()
                             .background(
-                                speechService.isRecording 
+                                micController.isRecording 
                                     ? Color.red.opacity(0.7)
                                     : appState.colorMode.buttonBackground
                             )
                             .clipShape(Circle())
                     }
-                    .onLongPressGesture(minimumDuration: 0.0, maximumDistance: 0) {
-                        // Empty handler for tap detection
-                    } onPressingChanged: { pressing in
-                        if pressing {
-                            // Finger down
-                            if !speechService.isRecording {
-                                onStartRecording()
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                // Keep recording while dragging
                             }
+                            .onEnded { _ in
+                                // Stop when released
+                                if micController.isRecording {
+                                    micController.stopRecording()
+                                }
+                            }
+                    )
+                    .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { isPressing in
+                        if isPressing {
+                            // Finger pressed down - start recording
+                            micController.startRecording()
                         } else {
-                            // Finger up
-                            if speechService.isRecording {
-                                onStopRecording()
-                            }
+                            // Finger released - stop recording
+                            micController.stopRecording()
                         }
-                    }
+                    }, perform: {})
                     
                     Spacer()
                     
                     // Bottom right: Erase button
-                    Button(action: {
-                        onClear()
-                    }) {
+                    Button(action: onClear) {
                         Image(systemName: "eraser.fill")
                             .font(.title)
                             .foregroundColor(appState.colorMode.text)

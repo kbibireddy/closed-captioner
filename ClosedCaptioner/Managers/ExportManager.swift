@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
 
 enum ExportFormat {
     case text
@@ -40,19 +42,24 @@ class ExportManager {
     }
     
     private func exportAsPDF(_ text: String, filename: String, path: URL) throws -> URL {
+        #if canImport(UIKit)
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
         let fileURL = path.appendingPathComponent("\(filename).pdf")
         
         try renderer.writePDF(to: fileURL) { context in
             context.beginPage()
-            let textAttributes = [
-                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)
+            let textAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 16)
             ]
             let attributedText = NSAttributedString(string: text, attributes: textAttributes)
             attributedText.draw(at: CGPoint(x: 50, y: 50))
         }
         
         return fileURL
+        #else
+        // Fallback to text export if UIKit not available
+        return try exportAsText(text, filename: filename, path: path)
+        #endif
     }
     
     private func exportAsHTML(_ text: String, filename: String, path: URL) throws -> URL {

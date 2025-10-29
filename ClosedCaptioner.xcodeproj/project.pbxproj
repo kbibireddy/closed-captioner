@@ -11,6 +11,16 @@
 		EB674F0B2EAF335500B5A10E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB674F0A2EAF335500B5A10E /* ContentView.swift */; };
 		EB674F0D2EAF335600B5A10E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB674F0C2EAF335600B5A10E /* Assets.xcassets */; };
 		EB674F102EAF335600B5A10E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB674F0F2EAF335600B5A10E /* Preview Assets.xcassets */; };
+		EB6750012EAF4000000000 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750002EAF4000000000 /* AudioService.swift */; };
+		EB6750032EAF4000000000 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750022EAF4000000000 /* SpeechService.swift */; };
+		EB6750052EAF4000000000 /* EmojiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750042EAF4000000000 /* EmojiService.swift */; };
+		EB6750072EAF4000000000 /* AppStateViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750062EAF4000000000 /* AppStateViewModel.swift */; };
+		EB6750092EAF4000000000 /* ControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750082EAF4000000000 /* ControlsView.swift */; };
+		EB67500A2EAF4000000000 /* CaptionTextDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */; };
+		EB67500C2EAF4000000000 /* ColorMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500D2EAF4000000000 /* ColorMode.swift */; };
+		EB67500E2EAF4000000000 /* CaptionText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500F2EAF4000000000 /* CaptionText.swift */; };
+		EB6750102EAF4000000000 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750112EAF4000000000 /* ExportManager.swift */; };
+		EB6750122EAF4000000000 /* HistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750132EAF4000000000 /* HistoryManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +29,16 @@
 		EB674F0A2EAF335500B5A10E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EB674F0C2EAF335600B5A10E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EB674F0F2EAF335600B5A10E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		EB6750002EAF4000000000 /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
+		EB6750022EAF4000000000 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		EB6750042EAF4000000000 /* EmojiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiService.swift; sourceTree = "<group>"; };
+		EB6750062EAF4000000000 /* AppStateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateViewModel.swift; sourceTree = "<group>"; };
+		EB6750082EAF4000000000 /* ControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlsView.swift; sourceTree = "<group>"; };
+		EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionTextDisplay.swift; sourceTree = "<group>"; };
+		EB67500D2EAF4000000000 /* ColorMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMode.swift; sourceTree = "<group>"; };
+		EB67500F2EAF4000000000 /* CaptionText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionText.swift; sourceTree = "<group>"; };
+		EB6750112EAF4000000000 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
+		EB6750132EAF4000000000 /* HistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,9 +72,14 @@
 			isa = PBXGroup;
 			children = (
 				EB674F082EAF335500B5A10E /* ClosedCaptionerApp.swift */,
-				EB674F0A2EAF335500B5A10E /* ContentView.swift */,
+				EB6750062EAF4000000000 /* AppStateViewModel.swift */,
 				EB674F0C2EAF335600B5A10E /* Assets.xcassets */,
+				EB6750142EAF4000000000 /* Managers */,
+				EB6750152EAF4000000000 /* Models */,
+				EB6750162EAF4000000000 /* Services */,
 				EB674F0E2EAF335600B5A10E /* Preview Content */,
+				EB6750172EAF4000000000 /* Views */,
+				EB674F0A2EAF335500B5A10E /* ContentView.swift */,
 			);
 			path = ClosedCaptioner;
 			sourceTree = "<group>";
@@ -65,6 +90,43 @@
 				EB674F0F2EAF335600B5A10E /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		EB6750142EAF4000000000 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750112EAF4000000000 /* ExportManager.swift */,
+				EB6750132EAF4000000000 /* HistoryManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
+		EB6750152EAF4000000000 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				EB67500F2EAF4000000000 /* CaptionText.swift */,
+				EB67500D2EAF4000000000 /* ColorMode.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		EB6750162EAF4000000000 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750002EAF4000000000 /* AudioService.swift */,
+				EB6750042EAF4000000000 /* EmojiService.swift */,
+				EB6750022EAF4000000000 /* SpeechService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		EB6750172EAF4000000000 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */,
+				EB6750082EAF4000000000 /* ControlsView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,6 +201,16 @@
 			files = (
 				EB674F0B2EAF335500B5A10E /* ContentView.swift in Sources */,
 				EB674F092EAF335500B5A10E /* ClosedCaptionerApp.swift in Sources */,
+				EB6750012EAF4000000000 /* AudioService.swift in Sources */,
+				EB6750032EAF4000000000 /* SpeechService.swift in Sources */,
+				EB6750052EAF4000000000 /* EmojiService.swift in Sources */,
+				EB6750072EAF4000000000 /* AppStateViewModel.swift in Sources */,
+				EB6750092EAF4000000000 /* ControlsView.swift in Sources */,
+				EB67500A2EAF4000000000 /* CaptionTextDisplay.swift in Sources */,
+				EB67500C2EAF4000000000 /* ColorMode.swift in Sources */,
+				EB67500E2EAF4000000000 /* CaptionText.swift in Sources */,
+				EB6750102EAF4000000000 /* ExportManager.swift in Sources */,
+				EB6750122EAF4000000000 /* HistoryManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
