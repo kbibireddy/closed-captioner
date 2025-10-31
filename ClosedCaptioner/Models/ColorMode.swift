@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Color mode for the app interface (day, night, or discreet)
 enum ColorMode: String, CaseIterable {
     case day
     case night

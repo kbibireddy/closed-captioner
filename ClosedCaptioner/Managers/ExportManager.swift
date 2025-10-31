@@ -10,17 +10,26 @@ import Foundation
 import UIKit
 #endif
 
+/// Format options for exporting caption text
 enum ExportFormat {
     case text
     case pdf
     case html
 }
 
+/// Manager that handles exporting caption text to various file formats
 class ExportManager {
+    /// Shared singleton instance
     static let shared = ExportManager()
     
     private init() {}
     
+    /// Exports text to a file in the specified format
+    /// - Parameters:
+    ///   - text: The text to export
+    ///   - format: The export format (text, PDF, or HTML)
+    /// - Returns: The URL of the exported file
+    /// - Throws: An error if export fails
     func exportText(_ text: String, format: ExportFormat) throws -> URL {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let filename = "captions_\(Date().timeIntervalSince1970)"
@@ -35,12 +44,27 @@ class ExportManager {
         }
     }
     
+    /// Exports text as a plain text file
+    /// - Parameters:
+    ///   - text: The text to export
+    ///   - filename: The base filename (without extension)
+    ///   - path: The directory path to save the file
+    /// - Returns: The URL of the exported file
+    /// - Throws: An error if file writing fails
     private func exportAsText(_ text: String, filename: String, path: URL) throws -> URL {
         let fileURL = path.appendingPathComponent("\(filename).txt")
         try text.write(to: fileURL, atomically: true, encoding: .utf8)
         return fileURL
     }
     
+    /// Exports text as a PDF file
+    /// - Parameters:
+    ///   - text: The text to export
+    ///   - filename: The base filename (without extension)
+    ///   - path: The directory path to save the file
+    /// - Returns: The URL of the exported file
+    /// - Throws: An error if PDF generation fails
+    /// - Note: Falls back to text export if UIKit is not available
     private func exportAsPDF(_ text: String, filename: String, path: URL) throws -> URL {
         #if canImport(UIKit)
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
@@ -62,6 +86,13 @@ class ExportManager {
         #endif
     }
     
+    /// Exports text as an HTML file
+    /// - Parameters:
+    ///   - text: The text to export
+    ///   - filename: The base filename (without extension)
+    ///   - path: The directory path to save the file
+    /// - Returns: The URL of the exported file
+    /// - Throws: An error if file writing fails
     private func exportAsHTML(_ text: String, filename: String, path: URL) throws -> URL {
         let html = """
         <!DOCTYPE html>

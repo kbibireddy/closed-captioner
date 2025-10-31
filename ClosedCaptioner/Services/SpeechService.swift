@@ -8,13 +8,17 @@
 import Speech
 import AVFoundation
 
+/// Service that handles speech recognition and converts audio to text
+/// Manages recording state, text updates, and automatic emoji insertion
 class SpeechService: ObservableObject {
+    /// Published property containing the current transcribed text with emojis
     @Published var currentText: String = "" {
         didSet {
             // Track text changes for emoji service
             handleTextChange()
         }
     }
+    /// Published property indicating whether speech recognition is currently active
     @Published var isRecording: Bool = false
     
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -23,20 +27,37 @@ class SpeechService: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private var inputNode: AVAudioInputNode?
     
-    // Track if text is from speech recognition (for emoji logic)
+    /// Tracks if current text is from speech recognition (affects emoji insertion logic)
     private var textIsFromSpeech: Bool = false
     
-    // Track text stability for emoji service
+    /// Timer for tracking text stability before adding emojis
     private var textStabilityTimer: Timer?
+    /// Timestamp of the last text change
     private var lastTextChangeTime: Date = Date()
-    private let TEXT_STABILITY_INTERVAL: TimeInterval = 2.5 // 2-3 seconds
+    /// Interval to wait for text stability before adding emojis (2.5 seconds)
+    private let TEXT_STABILITY_INTERVAL: TimeInterval = 2.5
+    /// Flag to prevent duplicate emoji insertion
     private var emojisAddedForCurrentText: Bool = false
     
-    // Helper to extract base text without emojis
+    /// Cleans up all resources on deallocation
+    deinit {
+        textStabilityTimer?.invalidate()
+        textStabilityTimer = nil
+        recognitionTask?.finish()
+        recognitionRequest?.endAudio()
+        audioEngine.stop()
+        inputNode?.removeTap(onBus: 0)
+    }
+    
+    /// Extracts base text without emojis for comparison purposes
+    /// - Parameter text: The text to process
+    /// - Returns: The text with all emoji characters removed
     private func extractBaseText(from text: String) -> String {
         return text.unicodeScalars.filter { !$0.properties.isEmoji }.reduce("") { $0 + String($1) }.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
+    /// Requests speech recognition authorization from the user
+    /// - Parameter completion: Callback with true if authorized, false otherwise
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async {
@@ -45,23 +66,26 @@ class SpeechService: ObservableObject {
         }
     }
     
+    /// Starts speech recognition recording
     func startRecording() {
         startRecognition()
     }
     
+    /// Stops speech recognition recording and adds emojis if needed
     func stopRecording() {
         stopRecognition()
     }
     
+    /// Starts speech recognition by setting up the audio engine and recognition task
     private func startRecognition() {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            print("Speech recognizer not available")
+            print("[SpeechService] ERROR: Speech recognizer not available")
             return
         }
         
         // Ensure we're not already recording
         if isRecording {
-            print("⚠️ Already recording, stopping first")
+            print("[SpeechService] WARNING: Already recording, stopping first")
             stopRecognition()
         }
         
@@ -95,7 +119,7 @@ class SpeechService: ObservableObject {
         do {
             try audioEngine.start()
         } catch {
-            print("Audio engine could not start: \(error)")
+            print("[SpeechService] ERROR: Audio engine could not start: \(error)")
             return
         }
         
@@ -119,23 +143,24 @@ class SpeechService: ObservableObject {
                         // This allows new emojis to be generated for the new text
                         self.currentText = newRawText
                         self.emojisAddedForCurrentText = false
-                        print("📝 Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
+                        print("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
                     } else if newBaseText == currentBaseText {
                         // Base text didn't change, keep the current text with emojis (don't overwrite)
-                        print("📝 Text unchanged, keeping existing text with emojis")
+                        print("[SpeechService] Text unchanged, keeping existing text with emojis")
                     }
                     // If newBaseText is empty, ignore this update
                 }
             }
             
             if let error = error {
-                print("Recognition error: \(error.localizedDescription)")
+                print("[SpeechService] ERROR: Recognition error: \(error.localizedDescription)")
             }
         }
     }
     
+    /// Stops speech recognition and cleans up resources
     private func stopRecognition() {
-        print("🛑 Stopping speech recognition...")
+        print("[SpeechService] Stopping speech recognition...")
         
         // Cancel text stability timer
         textStabilityTimer?.invalidate()
@@ -168,9 +193,11 @@ class SpeechService: ObservableObject {
         recognitionTask = nil
         inputNode = nil
         
-        print("✅ Speech recognition stopped")
+        print("[SpeechService] Speech recognition stopped")
     }
     
+    /// Handles text changes and schedules emoji insertion after text stabilizes
+    /// Waits for TEXT_STABILITY_INTERVAL before adding emojis to avoid rapid updates
     private func handleTextChange() {
         // Reset stability timer when text changes
         textStabilityTimer?.invalidate()
@@ -201,32 +228,34 @@ class SpeechService: ObservableObject {
         RunLoop.main.add(timer, forMode: .common)
     }
     
+    /// Adds emojis to the current text based on sentiment and content analysis
+    /// This method runs emoji analysis on a background thread to avoid blocking the UI
     private func addEmojisToText() {
         // Don't add emojis if they're already present and we've already added them
         if emojisAddedForCurrentText {
-            print("🎯 EmojiService: Already added emojis, skipping")
+            print("[SpeechService] EmojiService: Already added emojis, skipping")
             return
         }
         
         // Check if emojis are already added to current text (avoid duplicates)
         if currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
-            print("🎯 EmojiService: Emojis already in text, marking as added")
+            print("[SpeechService] EmojiService: Emojis already in text, marking as added")
             emojisAddedForCurrentText = true
             return
         }
         
         guard !currentText.isEmpty else {
-            print("🎯 EmojiService: Text is empty, skipping")
+            print("[SpeechService] EmojiService: Text is empty, skipping")
             return
         }
         
-        print("🎯 EmojiService: Analyzing text: '\(currentText)'")
+        print("[SpeechService] EmojiService: Analyzing text: '\(currentText)'")
         
         // Perform emoji analysis on background thread for better performance
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             let emojis = EmojiService.shared.analyzeTextForEmojis(text: self.currentText)
-            print("🎯 EmojiService: Got emojis: '\(emojis)'")
+            print("[SpeechService] EmojiService: Got emojis: '\(emojis)'")
             
             DispatchQueue.main.async {
                 // Double-check text hasn't changed and emojis not already added
@@ -235,11 +264,11 @@ class SpeechService: ObservableObject {
                     if !self.currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
                         if !emojis.isEmpty {
                             self.currentText = self.currentText + " " + emojis
-                            print("🎯 EmojiService: Added emojis to text")
+                            print("[SpeechService] EmojiService: Added emojis to text")
                         } else {
                             // Final fallback - always add at least one emoji
                             self.currentText = self.currentText + " " + "💭"
-                            print("🎯 EmojiService: Added fallback emoji")
+                            print("[SpeechService] EmojiService: Added fallback emoji")
                         }
                     }
                     self.emojisAddedForCurrentText = true

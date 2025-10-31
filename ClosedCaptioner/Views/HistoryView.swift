@@ -130,28 +130,28 @@ struct HistoryRow: View {
     let onTap: () -> Void
     let onDelete: () -> Void
     
-    private var dateFormatter: DateFormatter {
+    // Static formatters to avoid recreating on every render (performance optimization)
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
         return formatter
-    }
+    }()
     
-    private var timeFormatter: DateFormatter {
+    private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a zzz"
         formatter.timeZone = TimeZone.current
-        // Use abbreviation style for timezone (e.g., PST, EST)
         return formatter
-    }
+    }()
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             // Left: Timestamp (date on one line, time on second)
             VStack(alignment: .leading, spacing: 4) {
-                Text(dateFormatter.string(from: caption.timestamp))
+                Text(Self.dateFormatter.string(from: caption.timestamp))
                     .font(.system(size: 14, weight: .medium, design: .default))
                     .foregroundColor(appState.colorMode.text)
-                Text(timeFormatter.string(from: caption.timestamp))
+                Text(Self.timeFormatter.string(from: caption.timestamp))
                     .font(.system(size: 14, weight: .regular, design: .default))
                     .foregroundColor(appState.colorMode.text.opacity(0.7))
             }

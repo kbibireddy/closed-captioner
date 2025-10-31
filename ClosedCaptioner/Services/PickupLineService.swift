@@ -7,21 +7,27 @@
 
 import Foundation
 
+/// Service that manages pickup lines loaded from a catalog file
+/// Selects pickup lines based on shake strength for variety
 class PickupLineService {
+    /// Shared singleton instance
     static let shared = PickupLineService()
     
     private var pickupLines: [String] = []
     private var lastSelectedIndex: Int? = nil
-    private let MAX_SHAKE_STRENGTH: Double = 10.0 // Maximum expected shake strength
+    /// Maximum expected shake strength for normalization
+    private let MAX_SHAKE_STRENGTH: Double = 10.0
     
     private init() {
         loadPickupLines()
     }
     
+    /// Loads pickup lines from the pickupCatalog.txt file
+    /// Falls back to default lines if the file cannot be found
     private func loadPickupLines() {
         guard let path = Bundle.main.path(forResource: "pickupCatalog", ofType: "txt"),
               let content = try? String(contentsOfFile: path) else {
-            print("⚠️ PickupCatalog.txt not found, using fallback")
+            print("[PickupLineService] WARNING: pickupCatalog.txt not found, using fallback")
             pickupLines = [
                 "Are you a magician? Because whenever I look at you, everyone else disappears.",
                 "You must be a camera because every time I look at you, I smile.",
@@ -35,9 +41,13 @@ class PickupLineService {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         
-        print("✅ Loaded \(pickupLines.count) pickup lines")
+        print("[PickupLineService] Loaded \(pickupLines.count) pickup lines")
     }
     
+    /// Gets a pickup line based on shake strength
+    /// Higher shake strength selects lines further in the catalog (more bold/vulgar)
+    /// - Parameter shakeStrength: The strength of the shake gesture (0.0 to MAX_SHAKE_STRENGTH)
+    /// - Returns: A pickup line string, or nil if no lines are available
     func getPickupLine(shakeStrength: Double) -> String? {
         guard !pickupLines.isEmpty else {
             return nil
@@ -85,12 +95,14 @@ class PickupLineService {
         }
         
         lastSelectedIndex = selectedIndex
-        print("🎯 Shake strength: \(String(format: "%.2f", shakeStrength)), Selected index: \(selectedIndex)/\(totalLines-1) (target: \(targetIndex))")
+        print("[PickupLineService] Shake strength: \(String(format: "%.2f", shakeStrength)), Selected index: \(selectedIndex)/\(totalLines-1) (target: \(targetIndex))")
         
         return pickupLines[selectedIndex]
     }
     
-    // Legacy method for backwards compatibility
+    /// Legacy method for backwards compatibility
+    /// Gets a random pickup line using minimal shake strength
+    /// - Returns: A pickup line string, or nil if no lines are available
     func getRandomPickupLine() -> String? {
         // Use minimal shake strength (picks from beginning of file)
         return getPickupLine(shakeStrength: 0.5)

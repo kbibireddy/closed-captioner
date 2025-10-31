@@ -7,8 +7,11 @@
 
 import SwiftUI
 
+/// View that displays caption text with adaptive font sizing based on text length
 struct CaptionTextDisplay: View {
+    /// The text to display
     let text: String
+    /// The color mode for text and background colors
     let colorMode: ColorMode
     
     var body: some View {
@@ -22,6 +25,9 @@ struct CaptionTextDisplay: View {
             .lineSpacing(8)
     }
     
+    /// Calculates appropriate font size based on text length
+    /// Longer text gets progressively smaller font to fit on screen
+    /// - Returns: The calculated font size in points
     private func calculateFontSize() -> CGFloat {
         let baseSize: CGFloat = 80 // Large size for 4-6 words in landscape
         let textLength = text.count

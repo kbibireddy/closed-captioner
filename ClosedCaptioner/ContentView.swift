@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct ContentView: View {
     @StateObject private var speechService = SpeechService()
@@ -103,17 +106,17 @@ struct ContentView: View {
         }
         .onChange(of: micController.isRecording) { newValue in
             // When new recording starts, save current text to history
-            if previousRecordingState == false && newValue == true {
+            if !previousRecordingState && newValue {
                 // New recording is starting - save previous text
                 saveCurrentTextToHistory()
             }
-            // Update previous state
+            // Update previous state to track transitions
             previousRecordingState = newValue
         }
         .onAppear {
             setupAudioSession()
             requestPermissions()
-            // Initialize previous recording state
+            // Initialize previous recording state to track recording transitions
             previousRecordingState = micController.isRecording
         }
         .onShake {
@@ -126,30 +129,33 @@ struct ContentView: View {
         }
     }
     
+    /// Sets up the audio session for recording
     private func setupAudioSession() {
         do {
             try AudioService.shared.setupAudioSession()
         } catch {
-            print("Failed to setup audio session: \(error)")
+            print("[ContentView] ERROR: Failed to setup audio session: \(error)")
         }
     }
     
+    /// Requests microphone and speech recognition permissions
     private func requestPermissions() {
         AudioService.shared.requestMicrophonePermission { allowed in
             if allowed {
                 DispatchQueue.main.async {
                     self.speechService.requestAuthorization { authorized in
                         if !authorized {
-                            print("Speech permission denied")
+                            print("[ContentView] ERROR: Speech permission denied")
                         }
                     }
                 }
             } else {
-                print("Microphone permission denied")
+                print("[ContentView] ERROR: Microphone permission denied")
             }
         }
     }
     
+    /// Saves the current text to history if it's valid and different from the last saved caption
     private func saveCurrentTextToHistory() {
         let text = speechService.currentText
         guard !text.isEmpty else { return }
@@ -162,6 +168,8 @@ struct ContentView: View {
         _ = historyManager.addCaption(caption) // Guard rails are checked inside
     }
     
+    /// Handles shake gesture to replace text with a pickup line
+    /// Feature only available when mic is off, not in keyboard/history views, and cooldown is not active
     private func handleShake() {
         // Feature only available when:
         // - Mic is off
@@ -195,7 +203,7 @@ struct ContentView: View {
             _ = historyManager.addCaption(caption)
         }
         
-        // Enable 5 second cooldown
+        // Enable 5 second cooldown to prevent rapid successive triggers
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             shakeCooldownActive = false
         }

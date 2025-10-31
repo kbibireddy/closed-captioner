@@ -7,16 +7,26 @@
 
 import NaturalLanguage
 
+/// Service that analyzes text and returns appropriate emojis based on content and sentiment
+/// Uses Natural Language framework for sentiment analysis and keyword matching
 class EmojiService {
+    /// Shared singleton instance
     static let shared = EmojiService()
     
     private init() {}
     
+    /// Analyzes text and returns appropriate emojis based on content and sentiment
+    /// - Parameter text: The text to analyze
+    /// - Returns: A string containing 1-2 relevant emojis
     func analyzeTextForEmojis(text: String) -> String {
         let emojis = getEmojisForText(text)
         return emojis
     }
     
+    /// Analyzes text using Natural Language framework for sentiment
+    /// Then selects appropriate emojis based on content and sentiment
+    /// - Parameter text: The text to analyze
+    /// - Returns: A string containing 1-2 relevant emojis
     private func getEmojisForText(_ text: String) -> String {
         // Use Natural Language framework for sentiment analysis
         let tagger = NLTagger(tagSchemes: [.sentimentScore])
@@ -36,6 +46,11 @@ class EmojiService {
         return bestEmojis
     }
     
+    /// Selects emojis based on keyword matching and sentiment analysis
+    /// - Parameters:
+    ///   - text: The text to analyze
+    ///   - sentiment: The sentiment score from Natural Language framework
+    /// - Returns: A string containing 1-2 relevant emojis
     private func selectEmojisBasedOnContent(text: String, sentiment: String) -> String {
         var emojis: Set<String> = []
         
