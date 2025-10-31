@@ -26,6 +26,9 @@
 		EB6750182EAF4002000000 /* KeyboardEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750192EAF4002000000 /* KeyboardEditView.swift */; };
 		EB6750202EAF4003000000 /* DoneButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750212EAF4003000000 /* DoneButton.swift */; };
 		EB6750222EAF4004000000 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750232EAF4004000000 /* HistoryView.swift */; };
+		EB6750242EAF4005000000 /* pickupCatalog.txt in Resources */ = {isa = PBXBuildFile; fileRef = EB6750252EAF4005000000 /* pickupCatalog.txt */; };
+		EB6750262EAF4006000000 /* PickupLineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750272EAF4006000000 /* PickupLineService.swift */; };
+		EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750292EAF4007000000 /* ShakeDetectionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +52,9 @@
 		EB6750192EAF4002000000 /* KeyboardEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEditView.swift; sourceTree = "<group>"; };
 		EB6750212EAF4003000000 /* DoneButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneButton.swift; sourceTree = "<group>"; };
 		EB6750232EAF4004000000 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		EB6750252EAF4005000000 /* pickupCatalog.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = pickupCatalog.txt; sourceTree = "<group>"; };
+		EB6750272EAF4006000000 /* PickupLineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupLineService.swift; sourceTree = "<group>"; };
+		EB6750292EAF4007000000 /* ShakeDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetectionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +98,7 @@
 				EB674F0202EAF335600B5A10E /* ViewModels */,
 				EB6750172EAF4000000000 /* Views */,
 				EB674F0A2EAF335500B5A10E /* ContentView.swift */,
+				EB6750252EAF4005000000 /* pickupCatalog.txt */,
 			);
 			path = ClosedCaptioner;
 			sourceTree = "<group>";
@@ -128,6 +135,8 @@
 				EB6750002EAF4000000000 /* AudioService.swift */,
 				EB6750042EAF4000000000 /* EmojiService.swift */,
 				EB6750022EAF4000000000 /* SpeechService.swift */,
+				EB6750272EAF4006000000 /* PickupLineService.swift */,
+				EB6750292EAF4007000000 /* ShakeDetectionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -228,6 +237,7 @@
 			files = (
 				EB674F102EAF335600B5A10E /* Preview Assets.xcassets in Resources */,
 				EB674F0D2EAF335600B5A10E /* Assets.xcassets in Resources */,
+				EB6750242EAF4005000000 /* pickupCatalog.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +265,8 @@
 				EB6750182EAF4002000000 /* KeyboardEditView.swift in Sources */,
 				EB6750202EAF4003000000 /* DoneButton.swift in Sources */,
 				EB6750222EAF4004000000 /* HistoryView.swift in Sources */,
+				EB6750262EAF4006000000 /* PickupLineService.swift in Sources */,
+				EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

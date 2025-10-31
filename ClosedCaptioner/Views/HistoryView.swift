@@ -31,13 +31,13 @@ struct HistoryView: View {
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.system(size: 10.2, weight: .semibold)) // 12 * 0.85
                                 Text("Delete All")
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.system(size: 12.75, weight: .semibold)) // 15 * 0.85
                             }
                             .foregroundColor(.red)
-                            .padding(.horizontal, 15)
-                            .padding(.vertical, 9)
+                            .padding(.horizontal, 12.75) // 15 * 0.85
+                            .padding(.vertical, 7.65) // 9 * 0.85
                             .background(appState.colorMode.background)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
@@ -90,6 +90,7 @@ struct HistoryView: View {
                         }
                         .padding()
                     }
+                    .background(appState.colorMode.background)
                 }
             }
         }
@@ -176,8 +177,12 @@ struct HistoryRow: View {
             }
         }
         .padding()
-        .background(appState.colorMode.buttonBackground.opacity(0.5))
+        .background(appState.colorMode.buttonBackground)
         .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(appState.colorMode.text.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

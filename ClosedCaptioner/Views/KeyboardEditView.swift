@@ -43,8 +43,12 @@ struct KeyboardEditView: View {
                     .scrollContentBackground(.hidden)
                     .frame(height: 200)
                     .padding()
-                    .background(appState.colorMode.background)
+                    .background(appState.colorMode.buttonBackground)
                     .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(appState.colorMode.text.opacity(0.3), lineWidth: 1)
+                    )
                     .focused($isFocused)
                     .padding(.horizontal)
                     .onTapGesture {

@@ -153,8 +153,8 @@ class EmojiService {
             }
         }
         
-        // Always return at least 1 emoji, up to 3 emojis (limit to best matches)
-        let emojiArray = Array(emojis.prefix(3))
+        // Always return at least 1 emoji, up to 2 emojis (limit to best matches)
+        let emojiArray = Array(emojis.prefix(2))
         return emojiArray.joined(separator: " ")
     }
 }

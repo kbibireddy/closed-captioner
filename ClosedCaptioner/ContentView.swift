@@ -14,6 +14,7 @@ struct ContentView: View {
     @StateObject private var historyManager = HistoryManager.shared
     @State private var editedText = ""
     @State private var previousRecordingState: Bool = false
+    @State private var shakeCooldownActive: Bool = false
     
     init() {
         let speechService = SpeechService()
@@ -115,6 +116,9 @@ struct ContentView: View {
             // Initialize previous recording state
             previousRecordingState = micController.isRecording
         }
+        .onShake {
+            handleShake()
+        }
         .onDisappear {
             // Save current text before app closes
             saveCurrentTextToHistory()
@@ -156,6 +160,75 @@ struct ContentView: View {
         
         let caption = CaptionText(text: text, timestamp: Date(), hasEmojis: true)
         _ = historyManager.addCaption(caption) // Guard rails are checked inside
+    }
+    
+    private func handleShake() {
+        // Feature only available when:
+        // - Mic is off
+        // - In main content view (not keyboard/history views)
+        // - Cooldown is not active
+        guard !micController.isRecording,
+              !appState.showKeyboard,
+              !appState.showHistory,
+              !shakeCooldownActive else {
+            return
+        }
+        
+        // Enable cooldown immediately to prevent multiple triggers
+        shakeCooldownActive = true
+        
+        // Get shake strength from recently collected motion data
+        let shakeStrength = ShakeDetectionService.shared.getShakeStrength()
+        
+        // Save current text to history before replacing
+        if !speechService.currentText.isEmpty {
+            saveCurrentTextToHistory()
+        }
+        
+        // Get pickup line based on shake strength
+        if let pickupLine = PickupLineService.shared.getPickupLine(shakeStrength: shakeStrength) {
+            // Replace current text with pickup line
+            speechService.currentText = pickupLine
+            
+            // Save pickup line to history
+            let caption = CaptionText(text: pickupLine, timestamp: Date(), hasEmojis: false)
+            _ = historyManager.addCaption(caption)
+        }
+        
+        // Enable 5 second cooldown
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            shakeCooldownActive = false
+        }
+    }
+}
+
+// Extension to detect shake gesture
+extension View {
+    func onShake(perform action: @escaping () -> Void) -> some View {
+        self.modifier(ShakeDetectionModifier(action: action))
+    }
+}
+
+struct ShakeDetectionModifier: ViewModifier {
+    let action: () -> Void
+    
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
+                action()
+            }
+    }
+}
+
+extension UIDevice {
+    static let deviceDidShakeNotification = Notification.Name(rawValue: "deviceDidShakeNotification")
+}
+
+extension UIWindow {
+    open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if motion == .motionShake {
+            NotificationCenter.default.post(name: UIDevice.deviceDidShakeNotification, object: nil)
+        }
     }
 }
 

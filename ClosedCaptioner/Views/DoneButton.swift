@@ -12,14 +12,14 @@ struct DoneButton: View {
     let text: String
     let onAction: () -> Void
     
-    // Reduced by 25%: 20 * 0.75 = 15, 12 * 0.75 = 9, 20 * 0.75 = 15, 12 * 0.75 = 9
+    // Reduced by 25% then 15% more: 15 * 0.85 = 12.75, 9 * 0.85 = 7.65
     var body: some View {
         Button(action: onAction) {
             Text(text)
-                .font(.system(size: 15, weight: .semibold)) // 20 * 0.75
+                .font(.system(size: 12.75, weight: .semibold)) // 15 * 0.85
                 .foregroundColor(appState.colorMode.text)
-                .padding(.horizontal, 15) // 20 * 0.75
-                .padding(.vertical, 9) // 12 * 0.75
+                .padding(.horizontal, 12.75) // 15 * 0.85
+                .padding(.vertical, 7.65) // 9 * 0.85
                 .background(appState.colorMode.background)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)

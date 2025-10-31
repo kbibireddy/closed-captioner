@@ -53,31 +53,24 @@ struct ControlsView: View {
                 Spacer()
                 
                 HStack {
-                    // Bottom left: Keyboard button - always same appearance
+                    // Bottom left: Keyboard button - icon only, no background
                     Button(action: {
                         appState.toggleKeyboard()
                     }) {
                         Image(systemName: "keyboard")
-                            .font(.system(size: 19.8)) // .title2 reduced by 10% (22 * 0.9)
+                            .font(.system(size: 24, weight: .regular))
                             .foregroundColor(appState.colorMode.text)
-                            .padding(18) // Reduced by 10% (20 * 0.9)
-                            .background(appState.colorMode.buttonBackground)
-                            .clipShape(Circle())
                     }
+                    .padding()
                     
                     Spacer()
                     
                     // Bottom center: Mic button - start on release, kill on tap during recording
+                    // Icon only, no background (red icon when recording)
                     Image(systemName: micController.isRecording ? "stop.fill" : "mic")
-                        .font(.system(size: 25.2)) // .title reduced by 10% (28 * 0.9)
-                        .foregroundColor(micController.isRecording ? .black : appState.colorMode.text)
-                        .padding(18) // Reduced by 10% (20 * 0.9)
-                        .background(
-                            micController.isRecording 
-                                ? Color.red
-                                : appState.colorMode.buttonBackground
-                        )
-                        .clipShape(Circle())
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundColor(micController.isRecording ? .red : appState.colorMode.text)
+                        .padding()
                         .contentShape(Circle())
                         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
                             // Do nothing on press
@@ -93,15 +86,13 @@ struct ControlsView: View {
                     
                     Spacer()
                     
-                    // Bottom right: Erase button
+                    // Bottom right: Erase button - icon only, no background
                     Button(action: onClear) {
                         Image(systemName: "eraser.fill")
-                            .font(.system(size: 25.2)) // .title reduced by 10% (28 * 0.9)
+                            .font(.system(size: 28, weight: .regular))
                             .foregroundColor(appState.colorMode.text)
-                            .padding(18) // Reduced by 10% (20 * 0.9)
-                            .background(appState.colorMode.buttonBackground)
-                            .clipShape(Circle())
                     }
+                    .padding()
                 }
                 .padding()
                 .zIndex(2)
