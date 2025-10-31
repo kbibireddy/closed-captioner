@@ -11,7 +11,9 @@ struct ContentView: View {
     @StateObject private var speechService = SpeechService()
     @StateObject private var appState = AppStateViewModel()
     @StateObject private var micController: MicController
+    @StateObject private var historyManager = HistoryManager.shared
     @State private var editedText = ""
+    @State private var previousRecordingState: Bool = false
     
     init() {
         let speechService = SpeechService()
@@ -37,45 +39,21 @@ struct ContentView: View {
                 micController: micController,
                 appState: appState,
                 onClear: {
+                    // Save current text before clearing (poof pressed)
+                    saveCurrentTextToHistory()
                     appState.clearScreen()
                     speechService.currentText = ""
                 }
             )
             
-            // Text display or editor (center)
+            // Text display (center)
             VStack {
                 Spacer()
                 
-                if appState.showKeyboard {
-                    ZStack {
-                        // Background - tapable to close
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                appState.toggleKeyboard()
-                            }
-                        
-                        TextEditor(text: $editedText)
-                            .font(.system(size: 36, weight: .bold, design: .default))
-                            .foregroundColor(appState.colorMode.text)
-                            .scrollContentBackground(.hidden)
-                            .frame(height: 200)
-                            .padding()
-                            .background(appState.colorMode.background)
-                            .onTapGesture {
-                                // Prevent closing when tapping editor
-                            }
-                    }
-                    .onAppear {
-                        editedText = speechService.currentText
-                    }
-                    .onDisappear {
-                        speechService.currentText = editedText
-                    }
-                } else if appState.showPoofAnimation {
+                if appState.showPoofAnimation {
                     // Show POOF animation
                     Text("✨Poof!!!✨")
-                        .font(.system(size: 80, weight: .black, design: .default))
+                        .font(.system(size: 60, weight: .black, design: .default))
                         .foregroundColor(appState.colorMode.text)
                         .opacity(appState.poofOpacity)
                 } else {
@@ -85,7 +63,7 @@ struct ContentView: View {
                     } else if micController.isRecording {
                         // Show recording indicator
                         Text("🎤 Listening...")
-                            .font(.system(size: 60, weight: .black, design: .default))
+                            .font(.system(size: 45, weight: .black, design: .default))
                             .foregroundColor(appState.colorMode.text.opacity(0.5))
                     }
                 }
@@ -94,13 +72,53 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .zIndex(1)
+            
+            // Keyboard edit overlay - on top of everything
+            if appState.showKeyboard {
+                KeyboardEditView(
+                    appState: appState,
+                    text: $editedText,
+                    onDone: {
+                        // Update text and close keyboard view
+                        speechService.currentText = editedText
+                        appState.toggleKeyboard()
+                    }
+                )
+                .zIndex(10)
+                .onAppear {
+                    // Initialize with current text when overlay appears
+                    editedText = speechService.currentText
+                }
+            }
+            
+            // History overlay - on top of everything
+            if appState.showHistory {
+                HistoryView(
+                    appState: appState,
+                    historyManager: historyManager
+                )
+                .zIndex(10)
+            }
+        }
+        .onChange(of: micController.isRecording) { newValue in
+            // When new recording starts, save current text to history
+            if previousRecordingState == false && newValue == true {
+                // New recording is starting - save previous text
+                saveCurrentTextToHistory()
+            }
+            // Update previous state
+            previousRecordingState = newValue
         }
         .onAppear {
             setupAudioSession()
             requestPermissions()
+            // Initialize previous recording state
+            previousRecordingState = micController.isRecording
         }
         .onDisappear {
-            speechService.stopRecognition()
+            // Save current text before app closes
+            saveCurrentTextToHistory()
+            speechService.stopRecording()
         }
     }
     
@@ -126,6 +144,18 @@ struct ContentView: View {
                 print("Microphone permission denied")
             }
         }
+    }
+    
+    private func saveCurrentTextToHistory() {
+        let text = speechService.currentText
+        guard !text.isEmpty else { return }
+        
+        // Check if it's different from the last saved caption
+        let lastCaption = historyManager.sortedCaptions.first
+        guard lastCaption?.text != text else { return }
+        
+        let caption = CaptionText(text: text, timestamp: Date(), hasEmojis: true)
+        _ = historyManager.addCaption(caption) // Guard rails are checked inside
     }
 }
 

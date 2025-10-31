@@ -21,6 +21,11 @@
 		EB67500E2EAF4000000000 /* CaptionText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500F2EAF4000000000 /* CaptionText.swift */; };
 		EB6750102EAF4000000000 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750112EAF4000000000 /* ExportManager.swift */; };
 		EB6750122EAF4000000000 /* HistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750132EAF4000000000 /* HistoryManager.swift */; };
+		EB6750142EAF4001000000 /* MicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750152EAF4001000000 /* MicController.swift */; };
+		EB6750162EAF4001000000 /* MicControlProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750172EAF4001000000 /* MicControlProtocol.swift */; };
+		EB6750182EAF4002000000 /* KeyboardEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750192EAF4002000000 /* KeyboardEditView.swift */; };
+		EB6750202EAF4003000000 /* DoneButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750212EAF4003000000 /* DoneButton.swift */; };
+		EB6750222EAF4004000000 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750232EAF4004000000 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +44,11 @@
 		EB67500F2EAF4000000000 /* CaptionText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionText.swift; sourceTree = "<group>"; };
 		EB6750112EAF4000000000 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
 		EB6750132EAF4000000000 /* HistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryManager.swift; sourceTree = "<group>"; };
+		EB6750152EAF4001000000 /* MicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicController.swift; sourceTree = "<group>"; };
+		EB6750172EAF4001000000 /* MicControlProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicControlProtocol.swift; sourceTree = "<group>"; };
+		EB6750192EAF4002000000 /* KeyboardEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEditView.swift; sourceTree = "<group>"; };
+		EB6750212EAF4003000000 /* DoneButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneButton.swift; sourceTree = "<group>"; };
+		EB6750232EAF4004000000 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,12 +82,14 @@
 			isa = PBXGroup;
 			children = (
 				EB674F082EAF335500B5A10E /* ClosedCaptionerApp.swift */,
-				EB6750062EAF4000000000 /* AppStateViewModel.swift */,
 				EB674F0C2EAF335600B5A10E /* Assets.xcassets */,
+				EB674F0182EAF335600B5A10E /* Controllers */,
+				EB674F0192EAF335600B5A10E /* Interfaces */,
 				EB6750142EAF4000000000 /* Managers */,
 				EB6750152EAF4000000000 /* Models */,
-				EB6750162EAF4000000000 /* Services */,
 				EB674F0E2EAF335600B5A10E /* Preview Content */,
+				EB6750162EAF4000000000 /* Services */,
+				EB674F0202EAF335600B5A10E /* ViewModels */,
 				EB6750172EAF4000000000 /* Views */,
 				EB674F0A2EAF335500B5A10E /* ContentView.swift */,
 			);
@@ -125,8 +137,35 @@
 			children = (
 				EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */,
 				EB6750082EAF4000000000 /* ControlsView.swift */,
+				EB6750192EAF4002000000 /* KeyboardEditView.swift */,
+				EB6750212EAF4003000000 /* DoneButton.swift */,
+				EB6750232EAF4004000000 /* HistoryView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		EB674F0182EAF335600B5A10E /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750152EAF4001000000 /* MicController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		EB674F0192EAF335600B5A10E /* Interfaces */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750172EAF4001000000 /* MicControlProtocol.swift */,
+			);
+			path = Interfaces;
+			sourceTree = "<group>";
+		};
+		EB674F0202EAF335600B5A10E /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750062EAF4000000000 /* AppStateViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -157,7 +196,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					EB674F042EAF335500B5A10E = {
 						CreatedOnToolsVersion = 14.3.1;
@@ -211,6 +250,11 @@
 				EB67500E2EAF4000000000 /* CaptionText.swift in Sources */,
 				EB6750102EAF4000000000 /* ExportManager.swift in Sources */,
 				EB6750122EAF4000000000 /* HistoryManager.swift in Sources */,
+				EB6750142EAF4001000000 /* MicController.swift in Sources */,
+				EB6750162EAF4001000000 /* MicControlProtocol.swift in Sources */,
+				EB6750182EAF4002000000 /* KeyboardEditView.swift in Sources */,
+				EB6750202EAF4003000000 /* DoneButton.swift in Sources */,
+				EB6750222EAF4004000000 /* HistoryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,8 +295,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -272,6 +318,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -311,8 +358,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -325,6 +374,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -339,18 +389,17 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClosedCaptioner/Preview Content\"";
-				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
-				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -372,18 +421,17 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClosedCaptioner/Preview Content\"";
-				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
-				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -10,6 +10,7 @@ import SwiftUI
 class AppStateViewModel: ObservableObject {
     @Published var colorMode: ColorMode = .night
     @Published var showKeyboard = false
+    @Published var showHistory = false
     @Published var showFlash = false
     @Published var showPoofAnimation = false
     @Published var poofOpacity: Double = 1.0
@@ -53,6 +54,10 @@ class AppStateViewModel: ObservableObject {
     
     func toggleKeyboard() {
         showKeyboard.toggle()
+    }
+    
+    func toggleHistory() {
+        showHistory.toggle()
     }
 }
 

@@ -14,24 +14,18 @@ struct ControlsView: View {
     
     var body: some View {
         ZStack {
-            // Top buttons
+            // Top section - history button (left) and display mode picker (right)
             VStack {
                 HStack {
-                    // Top left: Keyboard button
+                    // Top left: History button (icon only, no circular background)
                     Button(action: {
-                        appState.toggleKeyboard()
+                        appState.toggleHistory()
                     }) {
-                        Image(systemName: "keyboard")
-                            .font(.title2)
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.system(size: 24, weight: .regular))
                             .foregroundColor(appState.colorMode.text)
-                            .padding()
-                            .background(
-                                appState.showKeyboard 
-                                    ? Color.blue.opacity(0.5)
-                                    : appState.colorMode.buttonBackground
-                            )
-                            .clipShape(Circle())
                     }
+                    .padding()
                     
                     Spacer()
                     
@@ -54,60 +48,57 @@ struct ControlsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .zIndex(2)
             
-            // Bottom buttons
+            // Bottom buttons - keyboard (left), mic (center), erase (right)
             VStack {
                 Spacer()
                 
                 HStack {
-                    // Bottom left: Mic button - press and hold
+                    // Bottom left: Keyboard button - always same appearance
                     Button(action: {
-                        if !micController.isRecording {
-                            micController.startRecording()
-                        } else {
-                            micController.stopRecording()
-                        }
+                        appState.toggleKeyboard()
                     }) {
-                        Image(systemName: micController.isRecording ? "mic.fill" : "mic")
-                            .font(.title)
+                        Image(systemName: "keyboard")
+                            .font(.system(size: 19.8)) // .title2 reduced by 10% (22 * 0.9)
                             .foregroundColor(appState.colorMode.text)
-                            .padding()
-                            .background(
-                                micController.isRecording 
-                                    ? Color.red.opacity(0.7)
-                                    : appState.colorMode.buttonBackground
-                            )
+                            .padding(18) // Reduced by 10% (20 * 0.9)
+                            .background(appState.colorMode.buttonBackground)
                             .clipShape(Circle())
                     }
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                // Keep recording while dragging
+                    
+                    Spacer()
+                    
+                    // Bottom center: Mic button - start on release, kill on tap during recording
+                    Image(systemName: micController.isRecording ? "stop.fill" : "mic")
+                        .font(.system(size: 25.2)) // .title reduced by 10% (28 * 0.9)
+                        .foregroundColor(micController.isRecording ? .black : appState.colorMode.text)
+                        .padding(18) // Reduced by 10% (20 * 0.9)
+                        .background(
+                            micController.isRecording 
+                                ? Color.red
+                                : appState.colorMode.buttonBackground
+                        )
+                        .clipShape(Circle())
+                        .contentShape(Circle())
+                        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                            // Do nothing on press
+                        }, perform: {
+                            if micController.isRecording {
+                                // Kill command: stop recording immediately
+                                micController.stopRecording()
+                            } else {
+                                // Start recording on release (tap, long press, or drag end)
+                                micController.startRecording()
                             }
-                            .onEnded { _ in
-                                // Stop when released
-                                if micController.isRecording {
-                                    micController.stopRecording()
-                                }
-                            }
-                    )
-                    .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { isPressing in
-                        if isPressing {
-                            // Finger pressed down - start recording
-                            micController.startRecording()
-                        } else {
-                            // Finger released - stop recording
-                            micController.stopRecording()
-                        }
-                    }, perform: {})
+                        })
                     
                     Spacer()
                     
                     // Bottom right: Erase button
                     Button(action: onClear) {
                         Image(systemName: "eraser.fill")
-                            .font(.title)
+                            .font(.system(size: 25.2)) // .title reduced by 10% (28 * 0.9)
                             .foregroundColor(appState.colorMode.text)
-                            .padding()
+                            .padding(18) // Reduced by 10% (20 * 0.9)
                             .background(appState.colorMode.buttonBackground)
                             .clipShape(Circle())
                     }
