@@ -76,6 +76,30 @@
 			);
 			sourceTree = "<group>";
 		};
+		EB674F0182EAF335600B5A10E /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750152EAF4001000000 /* MicController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		EB674F0192EAF335600B5A10E /* Interfaces */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750172EAF4001000000 /* MicControlProtocol.swift */,
+			);
+			path = Interfaces;
+			sourceTree = "<group>";
+		};
+		EB674F0202EAF335600B5A10E /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				EB6750062EAF4000000000 /* AppStateViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 		EB674F062EAF335500B5A10E /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -151,30 +175,6 @@
 				EB6750232EAF4004000000 /* HistoryView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		EB674F0182EAF335600B5A10E /* Controllers */ = {
-			isa = PBXGroup;
-			children = (
-				EB6750152EAF4001000000 /* MicController.swift */,
-			);
-			path = Controllers;
-			sourceTree = "<group>";
-		};
-		EB674F0192EAF335600B5A10E /* Interfaces */ = {
-			isa = PBXGroup;
-			children = (
-				EB6750172EAF4001000000 /* MicControlProtocol.swift */,
-			);
-			path = Interfaces;
-			sourceTree = "<group>";
-		};
-		EB674F0202EAF335600B5A10E /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				EB6750062EAF4000000000 /* AppStateViewModel.swift */,
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -403,6 +403,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"ClosedCaptioner/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -433,8 +434,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ClosedCaptioner/Preview Content\"";
+				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
