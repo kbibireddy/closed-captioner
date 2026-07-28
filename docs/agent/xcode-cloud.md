@@ -2,7 +2,7 @@
 
 > **Entry point:** [`AGENTS.md`](../../AGENTS.md)
 
-This guide sets up **Xcode Cloud** to archive **Closed Captioner** on push to `main` and deliver builds to **App Store Connect** for TestFlight and App Store review.
+This guide sets up **Xcode Cloud** to archive **Closed Captioner** on push to `main` and upload directly to **App Store Connect** for App Store review — **no TestFlight**.
 
 ---
 
@@ -115,18 +115,25 @@ Use these recommended settings:
 |--------|---------|
 | **Archive** | Scheme: `ClosedCaptioner`, Platform: iOS, Configuration: **Release** |
 
-#### Post-actions (App Store path)
+#### Post-actions (direct App Store — no TestFlight)
 
-Add **both** for a safe first release, then you can simplify:
+Use **one** post-action only:
 
-1. **TestFlight Internal Testing** (optional but recommended for first build)
-   - Automatically distributes to internal testers on your team
+| Post-action | Setting | Result |
+|-------------|---------|--------|
+| **App Store Connect** | **Prepare for Submission** | Uploads build and attaches it to the matching App Store version; you submit for review in ASC (or it waits until metadata is complete) |
+| **App Store Connect** | **Submit for Review** | Fully automatic — submits to App Review when the App Store version metadata is complete |
 
-2. **App Store Connect** → **Prepare for Submission** or **Submit for Review**
-   - **Prepare for Submission:** uploads build; you finish metadata and submit manually in ASC
-   - **Submit for Review:** auto-submits when metadata is complete (stricter)
+**Do not add** TestFlight Internal or External Testing post-actions if you want to skip TestFlight entirely.
 
-**Recommendation for v1.0:** use **TestFlight Internal** first. After verifying the build, add **Prepare for Submission** or submit manually in App Store Connect.
+**Recommendation:** Start with **Prepare for Submission** until your first App Store version is fully configured. Switch to **Submit for Review** once screenshots, privacy URL, and App Privacy are done.
+
+**Requirements for automatic App Store pickup:**
+
+1. An **App Store version** must exist in ASC with the same **marketing version** as Xcode (e.g. `1.1` in both places)
+2. Store listing metadata must be complete (for **Submit for Review**)
+3. **App Store Version Release** set to **Automatically release this version** (already configured on v1.0)
+4. `ITSAppUsesNonExemptEncryption = false` in `Info.plist` (already in repo — avoids export compliance blocking)
 
 ### Step 3 — Signing
 
@@ -161,7 +168,9 @@ flowchart LR
     C --> D[ci_pre_xcodebuild.sh sets build number]
     D --> E[Archive Release]
     E --> F[Upload to App Store Connect]
-    F --> G[TestFlight / App Store version]
+    F --> G[Attach to App Store version]
+    G --> H[Submit for Review optional]
+    H --> I[Live on App Store after approval]
 ```
 
 1. GitHub webhook triggers Xcode Cloud
@@ -169,9 +178,11 @@ flowchart LR
 3. `ci_pre_xcodebuild.sh` sets build number to `CI_BUILD_NUMBER`
 4. Xcode archives **Release** build
 5. Build uploads to App Store Connect
-6. Post-action distributes to TestFlight and/or prepares App Store version
+6. Post-action attaches build to the App Store version (same marketing version)
+7. If post-action is **Submit for Review** and metadata is complete → goes to App Review automatically
+8. After approval → goes live (if auto-release is enabled)
 
-**Pushing code does not instantly publish to the App Store.** It uploads a build. You still need complete store metadata and (for first release) **Submit for Review** in App Store Connect unless the workflow post-action is set to auto-submit.
+**TestFlight is not used.** Builds go straight to the App Store pipeline.
 
 ---
 
@@ -179,10 +190,28 @@ flowchart LR
 
 In [App Store Connect](https://appstoreconnect.apple.com):
 
-1. Open **Closed Captioner** → **TestFlight** — confirm build processing finished (can take 5–30 min)
-2. Install via TestFlight on your phone and smoke-test
-3. Open **App Store** tab → version **1.0**
-4. Attach the new build, fill metadata, submit for review
+1. Open **Closed Captioner** → **Distribution** (not TestFlight)
+2. Confirm the new build appears under the correct version (e.g. **1.1**)
+3. If using **Prepare for Submission**, click **Submit for Review** when ready
+4. Wait for App Review (typically 24–48 hours)
+5. App goes live automatically (auto-release is already enabled on v1.0)
+
+---
+
+## Edit an existing workflow (remove TestFlight)
+
+If your workflow already has TestFlight post-actions:
+
+1. Xcode → **Report navigator → Cloud** tab
+2. Control-click workflow **App Store Release** → **Manage Workflows**
+3. Open the workflow → **Post-Actions**
+4. **Remove** any **TestFlight Internal Testing** or **TestFlight External Testing** actions
+5. Ensure **App Store Connect** post-action is present:
+   - **Prepare for Submission** (semi-auto), or
+   - **Submit for Review** (fully auto when metadata complete)
+6. Save
+
+Or in App Store Connect → **Xcode Cloud** → **Manage Workflows** → edit the same settings.
 
 ---
 
@@ -196,7 +225,8 @@ In [App Store Connect](https://appstoreconnect.apple.com):
 | GitHub access denied | Xcode Cloud not authorized | Re-link GitHub in ASC Integrations or Xcode Accounts |
 | Duplicate build number | `ci_pre_xcodebuild.sh` not running | Confirm `ci_scripts/` is at repo root; scripts are executable |
 | Signing failed | Bundle ID / team mismatch | Verify `RaveSociety.ClosedCaptioner` and team `66R936J3XS` |
-| Build succeeds, no TestFlight build | Post-action missing | Add TestFlight or App Store Connect post-action to workflow |
+| Build succeeds, build not on App Store version | Wrong post-action or version mismatch | Remove TestFlight actions; add **App Store Connect** post-action; ensure ASC version matches `MARKETING_VERSION` |
+| Build stuck on export compliance | Encryption prompt | `ITSAppUsesNonExemptEncryption = false` in Info.plist (done); clear Build 7 once in ASC |
 | App Store submit blocked | Incomplete listing | Add screenshots, privacy URL, App Privacy answers |
 | Archive fails on speech/mic APIs | Missing usage descriptions | Already set in project — do not remove `INFOPLIST_KEY_NSMicrophoneUsageDescription` / `NSSpeechRecognitionUsageDescription` |
 
