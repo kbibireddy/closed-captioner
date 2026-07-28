@@ -10,95 +10,106 @@ import SwiftUI
 struct ControlsView: View {
     @ObservedObject var micController: MicController
     @ObservedObject var appState: AppStateViewModel
+    @ObservedObject private var premiumManager = PremiumManager.shared
     let onClear: () -> Void
-    
+
+    private var showBanners: Bool {
+        !premiumManager.isPremium
+            && !appState.showHistory
+            && !appState.showKeyboard
+    }
+
     var body: some View {
-        ZStack {
-            // Top section - history button (left) and display mode picker (right)
-            VStack {
-                HStack {
-                    // Top left: History button (icon only, no circular background)
+        VStack(spacing: 0) {
+            // Top icons
+            HStack {
+                Button(action: {
+                    appState.toggleHistory()
+                }) {
+                    Image(systemName: "list.bullet.rectangle")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundColor(appState.colorMode.text)
+                }
+                .padding()
+
+                Spacer()
+
+                if !premiumManager.isPremium {
                     Button(action: {
-                        appState.toggleHistory()
+                        appState.togglePremium()
                     }) {
-                        Image(systemName: "list.bullet.rectangle")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundColor(appState.colorMode.text)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 22, weight: .regular))
+                            .foregroundColor(appState.colorMode.text.opacity(0.85))
                     }
+                    .padding(.trailing, 4)
+                    .accessibilityLabel("Remove Ads")
+                }
+
+                Picker("Color Mode", selection: $appState.colorMode) {
+                    ForEach(ColorMode.allCases, id: \.self) { mode in
+                        Image(systemName: mode.icon)
+                            .tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 120)
+                .tint(appState.colorMode.text.opacity(0.3))
+                .colorMultiply(appState.colorMode.text)
+            }
+            .padding(.horizontal)
+
+            if showBanners {
+                BannerAdView(adUnitID: AdConfig.topBannerAdUnitID)
+                    .padding(.top, 4)
+            }
+
+            Spacer(minLength: 0)
+
+            if showBanners {
+                BannerAdView(adUnitID: AdConfig.bottomBannerAdUnitID)
+                    .padding(.bottom, 4)
+            }
+
+            // Bottom icons
+            HStack {
+                Button(action: {
+                    appState.toggleKeyboard()
+                }) {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundColor(appState.colorMode.text)
+                }
+                .padding()
+
+                Spacer()
+
+                Image(systemName: micController.isRecording ? "stop.fill" : "mic")
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundColor(micController.isRecording ? .red : appState.colorMode.text)
                     .padding()
-                    
-                    Spacer()
-                    
-                    // Top right: Display mode picker
-                    Picker("Color Mode", selection: $appState.colorMode) {
-                        ForEach(ColorMode.allCases, id: \.self) { mode in
-                            Image(systemName: mode.icon)
-                                .tag(mode)
+                    .contentShape(Circle())
+                    .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { _ in
+                    }, perform: {
+                        if micController.isRecording {
+                            micController.stopRecording()
+                        } else {
+                            micController.startRecording()
                         }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 120)
-                    .tint(appState.colorMode.text.opacity(0.3))
-                    .colorMultiply(appState.colorMode.text)
-                }
-                .padding()
-                
+                    })
+
                 Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .zIndex(2)
-            
-            // Bottom buttons - keyboard (left), mic (center), erase (right)
-            VStack {
-                Spacer()
-                
-                HStack {
-                    // Bottom left: Keyboard button - icon only, no background
-                    Button(action: {
-                        appState.toggleKeyboard()
-                    }) {
-                        Image(systemName: "keyboard")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundColor(appState.colorMode.text)
-                    }
-                    .padding()
-                    
-                    Spacer()
-                    
-                    // Bottom center: Mic button - start on release, kill on tap during recording
-                    // Icon only, no background (red icon when recording)
-                    Image(systemName: micController.isRecording ? "stop.fill" : "mic")
+
+                Button(action: onClear) {
+                    Image(systemName: "eraser.fill")
                         .font(.system(size: 28, weight: .regular))
-                        .foregroundColor(micController.isRecording ? .red : appState.colorMode.text)
-                        .padding()
-                        .contentShape(Circle())
-                        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-                            // Do nothing on press
-                        }, perform: {
-                            if micController.isRecording {
-                                // Kill command: stop recording immediately
-                                micController.stopRecording()
-                            } else {
-                                // Start recording on release (tap, long press, or drag end)
-                                micController.startRecording()
-                            }
-                        })
-                    
-                    Spacer()
-                    
-                    // Bottom right: Erase button - icon only, no background
-                    Button(action: onClear) {
-                        Image(systemName: "eraser.fill")
-                            .font(.system(size: 28, weight: .regular))
-                            .foregroundColor(appState.colorMode.text)
-                    }
-                    .padding()
+                        .foregroundColor(appState.colorMode.text)
                 }
                 .padding()
-                .zIndex(2)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .zIndex(2)
     }
 }
-

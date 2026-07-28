@@ -103,12 +103,26 @@ struct ContentView: View {
                 )
                 .zIndex(10)
             }
+
+            // Premium / remove-ads sheet
+            if appState.showPremium {
+                PremiumSheetView(appState: appState)
+                    .zIndex(11)
+                    .transition(.opacity)
+            }
         }
         .onChange(of: micController.isRecording) { newValue in
             // When new recording starts, save current text to history
             if !previousRecordingState && newValue {
                 // New recording is starting - save previous text
                 saveCurrentTextToHistory()
+            }
+            // When recording stops, count toward interstitial cadence
+            if previousRecordingState && !newValue {
+                let allowPresent = !appState.showHistory
+                    && !appState.showKeyboard
+                    && !PremiumManager.shared.isPremium
+                InterstitialCoordinator.shared.recordMicStop(allowPresent: allowPresent)
             }
             // Update previous state to track transitions
             previousRecordingState = newValue

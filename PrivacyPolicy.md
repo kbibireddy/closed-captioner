@@ -2,7 +2,7 @@
 
 **Effective Date:** October 31, 2025
 
-**Last Updated:** October 31, 2025
+**Last Updated:** July 27, 2026
 
 ## 1. Introduction
 
@@ -59,20 +59,20 @@ All data collection requires your explicit permission through iOS permission pro
 
 ## 4. How We Use Your Information
 
-We use the information we collect **exclusively on your device** for the following purposes:
+We use the information we collect for the following purposes:
 
 - **To Provide App Functionality:** Real-time speech-to-text transcription, caption display, text editing
 - **To Store History Locally:** Saving caption history on your device for your personal use
 - **To Enable Features:** Shake detection for entertainment features, export functionality
-- **To Improve User Experience:** All processing happens locally to provide responsive, offline functionality
+- **To Improve User Experience:** Caption and history features process data locally on your device
+- **To Show Advertisements:** The App displays ads via Google AdMob (see Section 6.2) unless you purchase **Remove Ads** (see Section 6.3). Ad-related identifiers and device information may be used by Google and its partners to deliver and measure ads, subject to your App Tracking Transparency choice on iOS
 
-**IMPORTANT:** We do **NOT** use your information for:
-- Advertising or marketing purposes
-- Analytics or tracking
-- Selling to third parties
-- Building user profiles
-- Any purpose beyond app functionality
+**IMPORTANT:** We do **NOT**:
+- Sell your personal information to third parties
+- Use your microphone audio, transcribed captions, or caption history for advertising targeting
+- Build marketing profiles from your caption content
 
+Caption text, audio, and history remain for app functionality only. Advertising is handled separately through Google AdMob as described below.
 ## 5. Data Storage and Security
 
 ### 5.1 Local Storage Only
@@ -88,15 +88,9 @@ All your data is stored **exclusively on your device** using iOS UserDefaults:
 - No data is transmitted over networks
 
 ### 5.3 Data Transmission
-**We do NOT transmit, share, or send any of your data to:**
-- Remote servers
-- Third-party services
-- Analytics platforms
-- Cloud storage services
-- Any external systems
+**Caption and history data:** We do not transmit your transcribed captions or caption history to our own servers. Audio used for speech-to-text is processed via Apple's Speech Recognition framework (see Section 6.1).
 
-All processing happens entirely on your device. Audio is processed locally using Apple's Speech Recognition framework, and the results remain on your device.
-
+**Advertising:** When ads are shown, the Google Mobile Ads SDK may communicate with Google's ad services and transmit device and advertising-related information as described in Section 6.2 and Google's policies. This does not include your caption text or microphone audio recordings stored by the App.
 ## 6. Third-Party Services
 
 ### 6.1 Apple Speech Recognition Framework
@@ -108,15 +102,34 @@ Our App uses Apple's SFSpeechRecognizer framework for speech-to-text conversion:
 
 **Note:** We do not control how Apple processes speech recognition data. For information about Apple's data practices, please review Apple's Privacy Policy.
 
-### 6.2 No Other Third-Party Services
-Our App does not use any other third-party analytics, advertising, or data collection services.
+### 6.2 Google AdMob (Advertising)
+Our App uses **Google AdMob** (Google Mobile Ads SDK) to display banner and interstitial advertisements:
+
+- **What it does:** Loads and displays ads within the App
+- **Data that may be used:** Device identifiers (such as the Identifier for Advertisers / IDFA, if you grant tracking permission), IP address, device type, and other information Google uses to serve and measure ads
+- **Your control:** On iOS you may be prompted via App Tracking Transparency (ATT). You can change tracking permission anytime in **Settings → Privacy & Security → Tracking**. Declining tracking still allows non-personalized ads
+- **Privacy:** AdMob data practices are governed by [Google's Privacy Policy](https://policies.google.com/privacy) and [Google's Advertising / How Google uses information from sites or apps](https://policies.google.com/technologies/partner-sites)
+
+We do not sell your personal information. We do not share your caption text, microphone audio, or caption history with AdMob for ad targeting.
+
+### 6.3 In-App Purchases (Apple StoreKit)
+The App offers an optional **Remove Ads** one-time purchase processed by Apple:
+
+- **What it does:** Permanently disables banner and interstitial advertisements in the App
+- **Data involved:** Purchase is handled entirely by Apple. We do not receive your payment card details
+- **Your control:** Manage or restore purchases through the in-app **Restore Purchases** button or iOS **Settings → Apple ID → Subscriptions / Purchase History**
+- **Privacy:** Apple's privacy policy applies to payment processing
+
+### 6.4 No Other Analytics Platforms
+Aside from Apple Speech Recognition (Section 6.1), Google AdMob (Section 6.2), and Apple StoreKit (Section 6.3), the App does not integrate additional third-party analytics or data brokers.
 
 ## 7. Data Sharing and Disclosure
 
-**We do NOT sell, rent, trade, or share your personal information with third parties.**
+**We do NOT sell, rent, or trade your personal information.**
 
-We may disclose information only in the following limited circumstances:
+Limited disclosure may occur as follows:
 
+- **Advertising partners:** Google AdMob and its advertising partners may receive advertising-related device information as described in Section 6.2
 - **Legal Requirements:** If required by law, court order, or governmental authority
 - **Protection of Rights:** To protect our rights, property, or safety, or that of users
 - **With Your Consent:** If you explicitly consent to sharing data
@@ -291,12 +304,13 @@ This Privacy Policy is governed by and construed in accordance with the laws of 
 Closed Captioner does not require account creation or user registration. All features work without creating an account.
 
 ### 20.2 Offline Functionality
-The App is designed to work primarily offline. Internet connectivity is only required for:
+Caption history and local features work without a network connection. Internet connectivity is required for:
 - Initial app download from the App Store
 - Apple's speech recognition service (if used)
+- Loading and displaying advertisements via Google AdMob
 
-### 20.3 No Tracking or Analytics
-We do not use any tracking technologies, cookies, or analytics tools. We do not track your behavior, usage patterns, or preferences beyond what is necessary for app functionality.
+### 20.3 Advertising and Tracking
+The App shows ads through Google AdMob. Personalized advertising may use the device advertising identifier if you allow App Tracking Transparency. You can deny or revoke tracking in iOS Settings. We do not use separate analytics SDKs beyond what AdMob provides for ad delivery and measurement.
 
 ### 20.4 Data Minimization
 We follow the principle of data minimization - we only collect and process data that is absolutely necessary for app functionality.
@@ -307,9 +321,9 @@ By downloading, installing, or using Closed Captioner, you acknowledge that you 
 
 ---
 
-**Last Updated:** October 31, 2025
+**Last Updated:** July 27, 2026
 
-**Version:** 1.0
+**Version:** 1.1
 
 **Effective Date:** October 31, 2025
 

@@ -59,6 +59,11 @@ struct HistoryView: View {
                         text: "Done",
                         onAction: {
                             appState.toggleHistory()
+                            guard !PremiumManager.shared.isPremium else { return }
+                            // Present after dismiss so the interstitial is not under the overlay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                InterstitialCoordinator.shared.presentAfterHistoryClose()
+                            }
                         }
                     )
                     .padding()

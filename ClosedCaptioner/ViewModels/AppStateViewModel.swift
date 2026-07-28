@@ -15,6 +15,8 @@ class AppStateViewModel: ObservableObject {
     @Published var showKeyboard = false
     /// Whether the history view is visible
     @Published var showHistory = false
+    /// Whether the premium / remove-ads sheet is visible
+    @Published var showPremium = false
     /// Whether the flash animation is active
     @Published var showFlash = false
     /// Whether the poof animation is active
@@ -70,6 +72,11 @@ class AppStateViewModel: ObservableObject {
     /// Toggles the history view visibility
     func toggleHistory() {
         showHistory.toggle()
+    }
+
+    /// Toggles the premium purchase sheet
+    func togglePremium() {
+        showPremium.toggle()
     }
 }
 
