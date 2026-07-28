@@ -29,15 +29,6 @@
 		EB6750242EAF4005000000 /* pickupCatalog.txt in Resources */ = {isa = PBXBuildFile; fileRef = EB6750252EAF4005000000 /* pickupCatalog.txt */; };
 		EB6750262EAF4006000000 /* PickupLineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750272EAF4006000000 /* PickupLineService.swift */; };
 		EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750292EAF4007000000 /* ShakeDetectionService.swift */; };
-		EB6760102EAF5000000001 /* AdConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760002EAF5000000001 /* AdConfig.swift */; };
-		EB6760112EAF5000000001 /* BannerAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760012EAF5000000001 /* BannerAdView.swift */; };
-		EB6760122EAF5000000001 /* InterstitialAdManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760022EAF5000000001 /* InterstitialAdManager.swift */; };
-		EB6760132EAF5000000001 /* InterstitialCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760032EAF5000000001 /* InterstitialCoordinator.swift */; };
-		EB6760142EAF5000000001 /* AdsBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760052EAF5000000001 /* AdsBootstrap.swift */; };
-		EB6760152EAF5000000001 /* IAPConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760062EAF5000000001 /* IAPConfig.swift */; };
-		EB6760162EAF5000000001 /* PremiumManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760072EAF5000000001 /* PremiumManager.swift */; };
-		EB6760172EAF5000000001 /* PremiumSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760082EAF5000000001 /* PremiumSheetView.swift */; };
-		EB6760182EAF5000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = EB6760202EAF5000000001 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,16 +55,6 @@
 		EB6750252EAF4005000000 /* pickupCatalog.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = pickupCatalog.txt; sourceTree = "<group>"; };
 		EB6750272EAF4006000000 /* PickupLineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupLineService.swift; sourceTree = "<group>"; };
 		EB6750292EAF4007000000 /* ShakeDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetectionService.swift; sourceTree = "<group>"; };
-		EB6760002EAF5000000001 /* AdConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdConfig.swift; sourceTree = "<group>"; };
-		EB6760012EAF5000000001 /* BannerAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerAdView.swift; sourceTree = "<group>"; };
-		EB6760022EAF5000000001 /* InterstitialAdManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterstitialAdManager.swift; sourceTree = "<group>"; };
-		EB6760032EAF5000000001 /* InterstitialCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterstitialCoordinator.swift; sourceTree = "<group>"; };
-		EB6760042EAF5000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		EB6760052EAF5000000001 /* AdsBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdsBootstrap.swift; sourceTree = "<group>"; };
-		EB6760062EAF5000000001 /* IAPConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPConfig.swift; sourceTree = "<group>"; };
-		EB6760072EAF5000000001 /* PremiumManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumManager.swift; sourceTree = "<group>"; };
-		EB6760082EAF5000000001 /* PremiumSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheetView.swift; sourceTree = "<group>"; };
-		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,7 +62,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EB6760182EAF5000000001 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +71,6 @@
 		EB674EFC2EAF335500B5A10E = {
 			isa = PBXGroup;
 			children = (
-				EB6760092EAF5000000001 /* ClosedCaptioner.storekit */,
 				EB674F072EAF335500B5A10E /* ClosedCaptioner */,
 				EB674F062EAF335500B5A10E /* Products */,
 			);
@@ -133,10 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				EB674F082EAF335500B5A10E /* ClosedCaptionerApp.swift */,
-				EB6760042EAF5000000001 /* Info.plist */,
 				EB674F0C2EAF335600B5A10E /* Assets.xcassets */,
-				EB6760302EAF5000000001 /* Ads */,
-				EB6760312EAF5000000001 /* IAP */,
 				EB674F0182EAF335600B5A10E /* Controllers */,
 				EB674F0192EAF335600B5A10E /* Interfaces */,
 				EB6750142EAF4000000000 /* Managers */,
@@ -149,27 +125,6 @@
 				EB6750252EAF4005000000 /* pickupCatalog.txt */,
 			);
 			path = ClosedCaptioner;
-			sourceTree = "<group>";
-		};
-		EB6760302EAF5000000001 /* Ads */ = {
-			isa = PBXGroup;
-			children = (
-				EB6760002EAF5000000001 /* AdConfig.swift */,
-				EB6760052EAF5000000001 /* AdsBootstrap.swift */,
-				EB6760012EAF5000000001 /* BannerAdView.swift */,
-				EB6760022EAF5000000001 /* InterstitialAdManager.swift */,
-				EB6760032EAF5000000001 /* InterstitialCoordinator.swift */,
-			);
-			path = Ads;
-			sourceTree = "<group>";
-		};
-		EB6760312EAF5000000001 /* IAP */ = {
-			isa = PBXGroup;
-			children = (
-				EB6760062EAF5000000001 /* IAPConfig.swift */,
-				EB6760072EAF5000000001 /* PremiumManager.swift */,
-			);
-			path = IAP;
 			sourceTree = "<group>";
 		};
 		EB674F0E2EAF335600B5A10E /* Preview Content */ = {
@@ -218,7 +173,6 @@
 				EB6750192EAF4002000000 /* KeyboardEditView.swift */,
 				EB6750212EAF4003000000 /* DoneButton.swift */,
 				EB6750232EAF4004000000 /* HistoryView.swift */,
-				EB6760082EAF5000000001 /* PremiumSheetView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -239,9 +193,6 @@
 			dependencies = (
 			);
 			name = ClosedCaptioner;
-			packageProductDependencies = (
-				EB6760202EAF5000000001 /* GoogleMobileAds */,
-			);
 			productName = ClosedCaptioner;
 			productReference = EB674F052EAF335500B5A10E /* ClosedCaptioner.app */;
 			productType = "com.apple.product-type.application";
@@ -270,9 +221,6 @@
 				Base,
 			);
 			mainGroup = EB674EFC2EAF335500B5A10E;
-			packageReferences = (
-				EB6760212EAF5000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
-			);
 			productRefGroup = EB674F062EAF335500B5A10E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -319,14 +267,6 @@
 				EB6750222EAF4004000000 /* HistoryView.swift in Sources */,
 				EB6750262EAF4006000000 /* PickupLineService.swift in Sources */,
 				EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */,
-				EB6760102EAF5000000001 /* AdConfig.swift in Sources */,
-				EB6760142EAF5000000001 /* AdsBootstrap.swift in Sources */,
-				EB6760112EAF5000000001 /* BannerAdView.swift in Sources */,
-				EB6760122EAF5000000001 /* InterstitialAdManager.swift in Sources */,
-				EB6760132EAF5000000001 /* InterstitialCoordinator.swift in Sources */,
-				EB6760152EAF5000000001 /* IAPConfig.swift in Sources */,
-				EB6760162EAF5000000001 /* PremiumManager.swift in Sources */,
-				EB6760172EAF5000000001 /* PremiumSheetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -466,12 +406,10 @@
 				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ClosedCaptioner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This identifier will be used to deliver personalized ads to you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -504,12 +442,10 @@
 				DEVELOPMENT_TEAM = 66R936J3XS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ClosedCaptioner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This identifier will be used to deliver personalized ads to you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -553,25 +489,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		EB6760212EAF5000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 12.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		EB6760202EAF5000000001 /* GoogleMobileAds */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = EB6760212EAF5000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
-			productName = GoogleMobileAds;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EB674EFD2EAF335500B5A10E /* Project object */;
 }
