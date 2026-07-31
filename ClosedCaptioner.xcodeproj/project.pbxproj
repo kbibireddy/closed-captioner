@@ -38,6 +38,8 @@
 		EB6760162EAF5000000001 /* IAPConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760062EAF5000000001 /* IAPConfig.swift */; };
 		EB6760172EAF5000000001 /* PremiumManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760072EAF5000000001 /* PremiumManager.swift */; };
 		EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760082EAF5000000001 /* PremiumSheetView.swift */; };
+		EB6760402EAF6000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760412EAF6000000001 /* SettingsView.swift */; };
+		EB6760422EAF6000000001 /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760432EAF6000000001 /* PurchasesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +75,8 @@
 		EB6760062EAF5000000001 /* IAPConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPConfig.swift; sourceTree = "<group>"; };
 		EB6760072EAF5000000001 /* PremiumManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumManager.swift; sourceTree = "<group>"; };
 		EB6760082EAF5000000001 /* PremiumSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheetView.swift; sourceTree = "<group>"; };
+		EB6760412EAF6000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		EB6760432EAF6000000001 /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
 		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -218,6 +222,8 @@
 				EB6750192EAF4002000000 /* KeyboardEditView.swift */,
 				EB6750212EAF4003000000 /* DoneButton.swift */,
 				EB6750232EAF4004000000 /* HistoryView.swift */,
+				EB6760412EAF6000000001 /* SettingsView.swift */,
+				EB6760432EAF6000000001 /* PurchasesView.swift */,
 				EB6760082EAF5000000001 /* PremiumSheetView.swift */,
 			);
 			path = Views;
@@ -327,6 +333,8 @@
 				EB6760162EAF5000000001 /* IAPConfig.swift in Sources */,
 				EB6760172EAF5000000001 /* PremiumManager.swift in Sources */,
 				EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */,
+				EB6760402EAF6000000001 /* SettingsView.swift in Sources */,
+				EB6760422EAF6000000001 /* PurchasesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

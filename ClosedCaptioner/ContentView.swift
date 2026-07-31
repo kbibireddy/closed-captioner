@@ -38,44 +38,46 @@ struct ContentView: View {
                     .transition(.opacity)
             }
             
-            // Controls overlay
-            ControlsView(
-                micController: micController,
-                appState: appState,
-                onClear: {
-                    // Save current text before clearing (poof pressed)
-                    saveCurrentTextToHistory()
-                    appState.clearScreen()
-                    speechService.currentText = ""
-                }
-            )
-            
-            // Text display (center)
+            // Layer order (back → front):
+            // 1) Caption canvas
+            // 2) Ads + button chrome (ControlsView: ads under buttons)
+            // 3) Modal overlays
+
+            // Caption text canvas (behind ads and buttons)
             VStack {
                 Spacer()
-                
+
                 if appState.showPoofAnimation {
-                    // Show POOF animation
                     Text("✨Poof!!!✨")
                         .font(.system(size: 60, weight: .black, design: .default))
                         .foregroundColor(appState.colorMode.text)
                         .opacity(appState.poofOpacity)
                 } else {
-                    // Only show text if there's actual content
                     if !speechService.currentText.isEmpty {
                         CaptionTextDisplay(text: speechService.currentText, colorMode: appState.colorMode)
                     } else if micController.isRecording {
-                        // Show recording indicator
                         Text("🎤 Listening...")
                             .font(.system(size: 45, weight: .black, design: .default))
                             .foregroundColor(appState.colorMode.text.opacity(0.5))
                     }
                 }
-                
+
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .zIndex(1)
+
+            // Ad presentation + button chrome (buttons always above ads)
+            ControlsView(
+                micController: micController,
+                appState: appState,
+                onClear: {
+                    saveCurrentTextToHistory()
+                    appState.clearScreen()
+                    speechService.currentText = ""
+                }
+            )
+            .zIndex(2)
             
             // Keyboard edit overlay - on top of everything
             if appState.showKeyboard {
@@ -95,20 +97,13 @@ struct ContentView: View {
                 }
             }
             
-            // History overlay - on top of everything
-            if appState.showHistory {
-                HistoryView(
+            // Settings overlay (History + Purchases)
+            if appState.showSettings {
+                SettingsView(
                     appState: appState,
                     historyManager: historyManager
                 )
                 .zIndex(10)
-            }
-
-            // Premium / remove-ads sheet
-            if appState.showPremium {
-                PremiumSheetView(appState: appState)
-                    .zIndex(11)
-                    .transition(.opacity)
             }
         }
         .onChange(of: micController.isRecording) { newValue in
@@ -119,7 +114,7 @@ struct ContentView: View {
             }
             // When recording stops, count toward interstitial cadence
             if previousRecordingState && !newValue {
-                let allowPresent = !appState.showHistory
+                let allowPresent = !appState.showSettings
                     && !appState.showKeyboard
                     && !PremiumManager.shared.isPremium
                 InterstitialCoordinator.shared.recordMicStop(allowPresent: allowPresent)
@@ -191,7 +186,7 @@ struct ContentView: View {
         // - Cooldown is not active
         guard !micController.isRecording,
               !appState.showKeyboard,
-              !appState.showHistory,
+              !appState.showSettings,
               !shakeCooldownActive else {
             return
         }

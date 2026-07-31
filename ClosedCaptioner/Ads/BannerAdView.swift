@@ -7,6 +7,7 @@ import GoogleMobileAds
 import SwiftUI
 import UIKit
 
+/// Anchored adaptive banner using Google's recommended size for the given width.
 struct BannerAdView: View {
     let adUnitID: String
     @State private var bannerHeight: CGFloat = 50
@@ -15,6 +16,7 @@ struct BannerAdView: View {
         GeometryReader { geometry in
             let width = max(geometry.size.width, 320)
             let adSize = currentOrientationAnchoredAdaptiveBanner(width: width)
+
             BannerViewRepresentable(adUnitID: adUnitID, adSize: adSize)
                 .frame(width: adSize.size.width, height: adSize.size.height)
                 .frame(maxWidth: .infinity)
@@ -45,8 +47,7 @@ private struct BannerViewRepresentable: UIViewRepresentable {
 
     func updateUIView(_ banner: BannerView, context: Context) {
         banner.rootViewController = UIViewController.adsRootViewController
-        if banner.adSize.size.width != adSize.size.width
-            || banner.adSize.size.height != adSize.size.height {
+        if !isAdSizeEqualToSize(size1: banner.adSize, size2: adSize) {
             banner.adSize = adSize
             banner.load(Request())
         }

@@ -19,7 +19,7 @@ A beautiful iOS app for real-time speech-to-text with closed captioning capabili
 
 ## Controls (Portrait Mode)
 
-- **Top Left**: History button
+- **Top Left**: Settings (History + Purchases)
 - **Top Right**: Display mode selector (Day/Night/Discreet)
 - **Bottom Left**: Keyboard toggle
 - **Bottom Center**: Microphone (tap to start recording, tap again to stop; auto-stops after 15 seconds)

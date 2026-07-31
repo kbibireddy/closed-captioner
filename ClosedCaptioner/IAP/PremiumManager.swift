@@ -10,12 +10,20 @@ import StoreKit
 final class PremiumManager: ObservableObject {
     static let shared = PremiumManager()
 
-    @Published private(set) var isPremium = false
-    @Published private(set) var removeAdsProduct: Product?
+    /// Product ID → StoreKit product
+    @Published private(set) var productsByID: [String: Product] = [:]
+    /// Owned non-consumable product IDs
+    @Published private(set) var ownedProductIDs: Set<String> = []
     @Published private(set) var purchaseInProgress = false
+    @Published private(set) var purchasingProductID: String?
     @Published var errorMessage: String?
 
     private var transactionListener: Task<Void, Never>?
+
+    /// Convenience: ads removed entitlement
+    var isPremium: Bool {
+        ownedProductIDs.contains(IAPConfig.removeAdsProductID)
+    }
 
     private init() {
         transactionListener = listenForTransactions()
@@ -26,47 +34,67 @@ final class PremiumManager: ObservableObject {
         }
     }
 
-    var removeAdsDisplayPrice: String {
-        removeAdsProduct?.displayPrice ?? "$4.99"
+    func product(for definition: IAPProductDefinition) -> Product? {
+        productsByID[definition.productID]
+    }
+
+    func displayPrice(for definition: IAPProductDefinition) -> String {
+        productsByID[definition.productID]?.displayPrice ?? definition.fallbackPrice
+    }
+
+    func isOwned(_ productID: String) -> Bool {
+        ownedProductIDs.contains(productID)
     }
 
     func loadProducts() async {
         do {
-            let products = try await Product.products(for: [IAPConfig.removeAdsProductID])
-            removeAdsProduct = products.first
+            let products = try await Product.products(for: IAPConfig.allProductIDs)
+            var map: [String: Product] = [:]
+            for product in products {
+                map[product.id] = product
+            }
+            productsByID = map
         } catch {
             print("[PremiumManager] Failed to load products: \(error.localizedDescription)")
         }
     }
 
     func refreshEntitlements() async {
-        var entitled = false
+        var owned: Set<String> = []
+        let knownIDs = Set(IAPConfig.allProductIDs)
 
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
-            guard transaction.productID == IAPConfig.removeAdsProductID else { continue }
-            entitled = true
-            break
+            guard knownIDs.contains(transaction.productID) else { continue }
+            owned.insert(transaction.productID)
         }
 
         let wasPremium = isPremium
-        isPremium = entitled
+        ownedProductIDs = owned
 
         if wasPremium != isPremium {
             AdsBootstrap.configureAdsIfNeeded(isPremium: isPremium)
         }
     }
 
-    func purchaseRemoveAds() async {
-        guard let product = removeAdsProduct else {
+    func purchase(_ definition: IAPProductDefinition) async {
+        await purchase(productID: definition.productID)
+    }
+
+    func purchase(productID: String) async {
+        guard let product = productsByID[productID] else {
             errorMessage = "Purchase unavailable. Try again later."
             await loadProducts()
             return
         }
 
         purchaseInProgress = true
+        purchasingProductID = productID
         errorMessage = nil
-        defer { purchaseInProgress = false }
+        defer {
+            purchaseInProgress = false
+            purchasingProductID = nil
+        }
 
         do {
             let result = try await product.purchase()
@@ -91,6 +119,18 @@ final class PremiumManager: ObservableObject {
         }
     }
 
+    /// Backward-compatible helper for Remove Ads.
+    func purchaseRemoveAds() async {
+        await purchase(productID: IAPConfig.removeAdsProductID)
+    }
+
+    var removeAdsDisplayPrice: String {
+        if let definition = IAPConfig.catalog.first(where: { $0.productID == IAPConfig.removeAdsProductID }) {
+            return displayPrice(for: definition)
+        }
+        return "$0.99"
+    }
+
     func restorePurchases() async {
         purchaseInProgress = true
         errorMessage = nil
@@ -99,7 +139,7 @@ final class PremiumManager: ObservableObject {
         do {
             try await AppStore.sync()
             await refreshEntitlements()
-            if !isPremium {
+            if ownedProductIDs.isEmpty {
                 errorMessage = "No previous purchase found for this Apple ID."
             }
         } catch {

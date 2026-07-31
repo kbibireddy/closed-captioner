@@ -30,7 +30,7 @@
   },
   "inAppPurchases" : [
     {
-      "displayPrice" : "4.99",
+      "displayPrice" : "0.99",
       "familyShareable" : false,
       "internalID" : "6738291001",
       "localizations" : [
