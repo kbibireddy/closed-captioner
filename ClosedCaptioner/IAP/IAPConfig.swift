@@ -17,8 +17,8 @@ struct IAPProductDefinition: Identifiable, Hashable {
 }
 
 enum IAPConfig {
-    /// Non-consumable — create in App Store Connect at $0.99.
-    static let removeAdsProductID = "RaveSociety.ClosedCaptioner.removeAds"
+    /// Must match App Store Connect Product ID exactly (immutable once created).
+    static let removeAdsProductID = "ClosedCaptioner"
 
     /// Ordered storefront list. Append future products without changing Purchases UI.
     static let catalog: [IAPProductDefinition] = [
