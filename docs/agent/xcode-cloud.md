@@ -44,7 +44,7 @@ Complete these **before** creating the workflow in Xcode.
 
 - [ ] Host [`PrivacyPolicy.md`](../../PrivacyPolicy.md) at a **public URL**
 - [ ] Prepare screenshots, description, keywords, support URL
-- [ ] Complete **App Privacy** questionnaire (microphone, on-device speech, local storage)
+- [ ] Complete **App Privacy** questionnaire to match [`PrivacyPolicy.md`](../../PrivacyPolicy.md) §20: Audio Data (no tracking); Device ID + Advertising Data (**Used for Tracking** = Yes via AdMob/ATT)
 
 ### 3. GitHub repository access
 
