@@ -44,6 +44,8 @@ Complete these **before** creating the workflow in Xcode.
 
 - [ ] Host [`PrivacyPolicy.md`](../../PrivacyPolicy.md) at a **public URL**
 - [ ] Prepare screenshots, description, keywords, support URL
+- [ ] Set **Marketing URL** to a `kbibireddy.github.io` URL (required for AdMob `app-ads.txt` — see [`app-ads-txt.md`](app-ads-txt.md))
+- [ ] Confirm Age Ratings **Advertising = Yes** when AdMob is in the binary
 - [ ] Complete **App Privacy** questionnaire to match [`PrivacyPolicy.md`](../../PrivacyPolicy.md) §20: Audio Data (no tracking); Device ID + Advertising Data (**Used for Tracking** = Yes via AdMob/ATT)
 
 ### 3. GitHub repository access
