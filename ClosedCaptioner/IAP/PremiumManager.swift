@@ -5,6 +5,7 @@
 
 import Foundation
 import StoreKit
+import UIKit
 
 @MainActor
 final class PremiumManager: ObservableObject {
@@ -16,6 +17,7 @@ final class PremiumManager: ObservableObject {
     @Published private(set) var ownedProductIDs: Set<String> = []
     @Published private(set) var purchaseInProgress = false
     @Published private(set) var purchasingProductID: String?
+    @Published private(set) var productsLoaded = false
     @Published var errorMessage: String?
 
     private var transactionListener: Task<Void, Never>?
@@ -54,8 +56,21 @@ final class PremiumManager: ObservableObject {
                 map[product.id] = product
             }
             productsByID = map
+            productsLoaded = true
+
+            if map.isEmpty {
+                print("[PremiumManager] StoreKit returned no products for \(IAPConfig.allProductIDs)")
+                errorMessage = "Purchase unavailable. The store could not load this item."
+            } else {
+                print("[PremiumManager] Loaded products: \(map.keys.sorted())")
+                if errorMessage?.localizedCaseInsensitiveContains("unavailable") == true {
+                    errorMessage = nil
+                }
+            }
         } catch {
+            productsLoaded = true
             print("[PremiumManager] Failed to load products: \(error.localizedDescription)")
+            errorMessage = "Purchase unavailable. \(error.localizedDescription)"
         }
     }
 
@@ -82,9 +97,12 @@ final class PremiumManager: ObservableObject {
     }
 
     func purchase(productID: String) async {
+        if productsByID[productID] == nil {
+            await loadProducts()
+        }
+
         guard let product = productsByID[productID] else {
             errorMessage = "Purchase unavailable. Try again later."
-            await loadProducts()
             return
         }
 
@@ -97,7 +115,7 @@ final class PremiumManager: ObservableObject {
         }
 
         do {
-            let result = try await product.purchase()
+            let result = try await purchaseProduct(product)
 
             switch result {
             case .success(let verification):
@@ -145,6 +163,20 @@ final class PremiumManager: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func purchaseProduct(_ product: Product) async throws -> Product.PurchaseResult {
+        if #available(iOS 17.0, *), let scene = Self.foregroundWindowScene {
+            return try await product.purchase(confirmIn: scene)
+        }
+        return try await product.purchase()
+    }
+
+    private static var foregroundWindowScene: UIWindowScene? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+            ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
     }
 
     private func listenForTransactions() -> Task<Void, Never> {

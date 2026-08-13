@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-/// Layout (back → front): caption canvas (ContentView) → ad slots → button chrome.
-/// Ads use Google adaptive sizes and sit in dedicated rows so they never cover controls.
+/// Top bar → top banner → captions (behind spacer) → bottom banner → bottom bar.
+/// One VStack so banners cannot overlay the control buttons.
 struct ControlsView: View {
     @ObservedObject var micController: MicController
     @ObservedObject var appState: AppStateViewModel
@@ -22,54 +22,33 @@ struct ControlsView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Ad presentation layer — between caption canvas (behind) and buttons (in front)
-            adPresentationLayer
-                .zIndex(1)
-
-            // Button chrome — always above ads
-            buttonChromeLayer
-                .zIndex(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .zIndex(2)
-    }
-
-    /// Reserves top/bottom chrome height, then places Google adaptive banners
-    /// immediately inside that chrome so ads never overlap buttons.
-    private var adPresentationLayer: some View {
         VStack(spacing: 0) {
-            Color.clear
-                .frame(height: Self.topChromeHeight)
+            topBar
+                .padding(.vertical, 8)
+                .background(appState.colorMode.background)
+                .layoutPriority(1)
 
             if showBanners {
                 BannerAdView(adUnitID: AdConfig.topBannerAdUnitID)
-                    .padding(.top, 30)
+                    .padding(.top, 4)
+                    .layoutPriority(1)
             }
 
             Spacer(minLength: 0)
 
             if showBanners {
                 BannerAdView(adUnitID: AdConfig.bottomBannerAdUnitID)
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 4)
+                    .layoutPriority(1)
             }
 
-            Color.clear
-                .frame(height: Self.bottomChromeHeight)
-        }
-        .allowsHitTesting(showBanners)
-    }
-
-    private var buttonChromeLayer: some View {
-        VStack(spacing: 0) {
-            topBar
-                .frame(height: Self.topChromeHeight)
-
-            Spacer(minLength: 0)
-
             bottomBar
-                .frame(height: Self.bottomChromeHeight)
+                .padding(.vertical, 4)
+                .background(appState.colorMode.background)
+                .layoutPriority(1)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .zIndex(2)
     }
 
     private var topBar: some View {
@@ -100,7 +79,6 @@ struct ControlsView: View {
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity)
-        .background(appState.colorMode.background.opacity(0.001))
     }
 
     private var bottomBar: some View {
@@ -141,11 +119,5 @@ struct ControlsView: View {
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity)
-        .background(appState.colorMode.background.opacity(0.001))
     }
-
-    /// Matches top control row height so ad slot starts below icons.
-    private static let topChromeHeight: CGFloat = 56
-    /// Matches bottom control row height so ad slot ends above mic/keyboard/erase.
-    private static let bottomChromeHeight: CGFloat = 64
 }

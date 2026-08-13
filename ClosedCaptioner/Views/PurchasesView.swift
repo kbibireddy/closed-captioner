@@ -95,9 +95,12 @@ struct PurchaseProductRow: View {
                     Task { await premiumManager.purchase(definition) }
                 } label: {
                     Group {
-                        if isPurchasingThis {
+                        if isPurchasingThis || !premiumManager.productsLoaded {
                             ProgressView()
                                 .tint(appState.colorMode.background)
+                        } else if premiumManager.product(for: definition) == nil {
+                            Text("Retry")
+                                .font(.system(size: 16, weight: .semibold))
                         } else {
                             Text(premiumManager.displayPrice(for: definition))
                                 .font(.system(size: 16, weight: .semibold))
@@ -109,7 +112,7 @@ struct PurchaseProductRow: View {
                     .foregroundColor(appState.colorMode.background)
                     .cornerRadius(10)
                 }
-                .disabled(premiumManager.purchaseInProgress)
+                .disabled(premiumManager.purchaseInProgress || !premiumManager.productsLoaded)
             }
         }
         .padding(16)

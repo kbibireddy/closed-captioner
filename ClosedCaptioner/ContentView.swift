@@ -40,7 +40,7 @@ struct ContentView: View {
             
             // Layer order (back → front):
             // 1) Caption canvas
-            // 2) Ads + button chrome (ControlsView: ads under buttons)
+            // 2) ControlsView (top/bottom bars with banners between them)
             // 3) Modal overlays
 
             // Caption text canvas (behind ads and buttons)

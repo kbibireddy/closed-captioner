@@ -4,7 +4,21 @@
 
   ],
   "products" : [
-
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "6738291001",
+      "localizations" : [
+        {
+          "description" : "Remove all banner and interstitial ads permanently.",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "ClosedCaptioner",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
+    }
   ],
   "settings" : {
     "_applicationInternalID" : "6754772689",
@@ -25,24 +39,7 @@
 
   ],
   "version" : {
-    "major" : 4,
+    "major" : 3,
     "minor" : 0
-  },
-  "inAppPurchases" : [
-    {
-      "displayPrice" : "0.99",
-      "familyShareable" : false,
-      "internalID" : "6738291001",
-      "localizations" : [
-        {
-          "description" : "Remove all banner and interstitial ads permanently.",
-          "displayName" : "Remove Ads",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "ClosedCaptioner",
-      "referenceName" : "Remove Ads",
-      "type" : "NonConsumable"
-    }
-  ]
+  }
 }
