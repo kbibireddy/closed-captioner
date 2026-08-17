@@ -228,6 +228,7 @@ Or in App Store Connect → **Xcode Cloud** → **Manage Workflows** → edit th
 | Duplicate build number | `ci_pre_xcodebuild.sh` not running | Confirm `ci_scripts/` is at repo root; scripts are executable |
 | Signing failed | Bundle ID / team mismatch | Verify `RaveSociety.ClosedCaptioner` and team `66R936J3XS` |
 | Build succeeds, build not on App Store version | Wrong post-action or version mismatch | Remove TestFlight actions; add **App Store Connect** post-action; ensure ASC version matches `MARKETING_VERSION` |
+| **Prepare Build for App Store Connect failed** after a successful archive | Marketing version already **Ready for Distribution** / released (e.g. 1.1 closed; Cloud tried to upload 1.1 again) | Bump `MARKETING_VERSION` in `project.pbxproj`, create a matching iOS version in ASC, commit and push to `main` |
 | Build stuck on export compliance | Encryption prompt | `ITSAppUsesNonExemptEncryption = false` in Info.plist (done); clear Build 7 once in ASC |
 | App Store submit blocked | Incomplete listing | Add screenshots, privacy URL, App Privacy answers |
 | Archive fails on speech/mic APIs | Missing usage descriptions | Already set in project — do not remove `INFOPLIST_KEY_NSMicrophoneUsageDescription` / `NSSpeechRecognitionUsageDescription` |
