@@ -8,9 +8,9 @@ Nearby messaging. Radio on: iOS browses and advertises. Swipe up on a caption to
 
 | Piece | Behavior |
 |--------|----------|
-| Radio icon, top right | Off by default. On = browse + advertise Multipeer `cc-p2p`. |
+| Radio icon, top right | Off by default. On = browse + advertise Multipeer `cc-p2p`. Stays up if you switch apps or lock the phone until you turn it off, force-quit, or the auto-off timer (Settings → General, default 4 hours). iOS may still pause it to save battery. |
 | Radio status (left of icon) | While on: labeled **Nearby**, then `Looking…` or `N people`. If **Relay messages** is on, a **Relaying** line. Hidden when radio is off. Detailed counters are in Settings → KPIs. |
-| Relay messages | Settings → General → Nearby. **Off by default.** Radio must be on. Forwards payloads that have an `id` (TTL 4). v1 / no-id packets are displayed only, not forwarded. No catch-up, no background mesh. |
+| Relay messages | Settings → General → Nearby. **Off by default.** Radio must be on. Forwards payloads that have an `id` (TTL 4). v1 / no-id packets are displayed only, not forwarded. No catch-up. |
 | Live log strip | Directly **above the bottom banner**. Transparent. New York serif (`AppType.display`) like captions / Settings titles. Multi-line until 180 characters. Relative age (`1s ago`). Height hugs one row, then grows to 50pt **+ 75%** and scrolls. Top of a full window fades to clear; latest row stays at the bottom. |
 | Log row | `[display name] message… HH:mm:ss` — one line, message truncated. Newest at the bottom. Max **200** rows; oldest is dropped. |
 | Display name | Settings → General → User info. Defaults to device host name; user can change it. |
@@ -28,7 +28,7 @@ Radio **on** browses and advertises. Two phones with radio on can see each other
 5. Put text on the main screen (mic or keyboard). Swipe **up** on the caption.
 6. Caption flies off the top, is saved to History, and a row with **your display name** appears in the log only after the send succeeds. Mac terminal should print the same text.
 7. Turn the radio off → log strip hides; center captions are unchanged. Eraser does not clear the log.
-8. Relay (optional): Settings → General → Nearby → **Relay messages**. While radio is on, the HUD shows **Relaying**. A third phone beyond 1 hop should see the caption only if the middle phone has relay on. Backgrounding a phone drops its session; returning to the app rebuilds without resetting KPIs. Detailed forwarded / duplicate counts stay in Settings → KPIs.
+8. Relay (optional): Settings → General → Nearby → **Relay messages**. While radio is on, the HUD shows **Relaying**. A third phone beyond 1 hop should see the caption only if the middle phone has relay on. Switching apps or locking the phone should **not** tear down the session immediately; the middle phone stays a hop until radio off, force-quit, auto-off timer, or iOS suspending the process. Returning to the app rebuilds if iOS did suspend, without resetting KPIs. Detailed forwarded / duplicate counts stay in Settings → KPIs.
 
 ## Do not break
 
@@ -43,9 +43,10 @@ Radio **on** browses and advertises. Two phones with radio on can see each other
 - `NSLocalNetworkUsageDescription`
 - `NSBonjourServices` = `_cc-p2p._tcp`
 - `NSBluetoothAlwaysUsageDescription`
+- Background modes: `audio`, `bluetooth-central`, `bluetooth-peripheral` (radio can keep advertising while backgrounded; iOS may still suspend)
 
 ## Limits
 
-- App must stay in the foreground.
+- Radio stays up in the background until you turn it off, force-quit, or the auto-off timer. iOS can still freeze Multipeer to save battery; returning to the app rebuilds the session.
 - Mac stub is not a Bluetooth-radio proof; it usually uses LAN Bonjour.
 - Keep `P2PConfig.swift` copies in the app and the tool identical.

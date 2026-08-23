@@ -90,6 +90,51 @@ struct GeneralSettingsView: View {
             .tint(appState.colors.accent)
             .accessibilityLabel("Relay messages")
             .accessibilityHint("Forwards nearby captions so they can reach people farther away. Radio must also be on.")
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Keep radio nearby")
+                    .font(AppType.display(15, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                Text("Stays on if you switch apps or lock the phone. Stops when you turn radio off, close the app, or this timer ends. iOS may still pause it to save battery.")
+                    .font(AppType.display(13, weight: .medium))
+                    .foregroundColor(appState.colors.muted)
+
+                HStack(spacing: 4) {
+                    ForEach(RadioKeepAlive.allCases) { option in
+                        Button {
+                            appState.radioKeepAlive = option
+                        } label: {
+                            Text(option.title)
+                                .font(AppType.display(11, weight: .bold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .foregroundColor(
+                                    appState.radioKeepAlive == option
+                                        ? appState.colors.onAccent
+                                        : appState.colors.muted
+                                )
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(
+                                    appState.radioKeepAlive == option
+                                        ? appState.colors.accent
+                                        : Color.clear
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                        .accessibilityLabel(option.title)
+                        .accessibilityAddTraits(appState.radioKeepAlive == option ? .isSelected : [])
+                    }
+                }
+                .padding(4)
+                .background(appState.colors.buttonBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(appState.colors.line, lineWidth: 1)
+                )
+            }
+            .padding(.top, 8)
         }
     }
 

@@ -13,6 +13,7 @@ class AppStateViewModel: ObservableObject {
     private static let colorModeDefaultsKey = "ClosedCaptioner.colorMode"
     private static let displayNameDefaultsKey = "ClosedCaptioner.displayName"
     private static let relayMessagesDefaultsKey = "ClosedCaptioner.relayMessages"
+    private static let radioKeepAliveDefaultsKey = "ClosedCaptioner.radioKeepAlive"
 
     /// Day or night appearance
     @Published var colorMode: ColorMode {
@@ -36,6 +37,12 @@ class AppStateViewModel: ObservableObject {
     @Published var relayMessages: Bool {
         didSet {
             UserDefaults.standard.set(relayMessages, forKey: Self.relayMessagesDefaultsKey)
+        }
+    }
+    /// Auto-off for radio (and relay) after this duration. Default 4 hours.
+    @Published var radioKeepAlive: RadioKeepAlive {
+        didSet {
+            UserDefaults.standard.set(radioKeepAlive.rawValue, forKey: Self.radioKeepAliveDefaultsKey)
         }
     }
     /// Whether the keyboard editing view is visible
@@ -82,6 +89,8 @@ class AppStateViewModel: ObservableObject {
             self.displayName = Self.hostDisplayName()
         }
         self.relayMessages = defaults.bool(forKey: Self.relayMessagesDefaultsKey)
+        let savedKeepAlive = defaults.string(forKey: Self.radioKeepAliveDefaultsKey)
+        self.radioKeepAlive = RadioKeepAlive(rawValue: savedKeepAlive ?? "") ?? .fourHours
     }
 
     /// Device host name used until the user picks a display name.

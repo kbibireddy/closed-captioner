@@ -8,6 +8,38 @@
 
 import Foundation
 
+/// How long radio stays on after you enable it (including in the background).
+enum RadioKeepAlive: String, CaseIterable, Identifiable {
+    case thirtyMinutes
+    case oneHour
+    case fourHours
+    case eightHours
+    case untilOff
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .thirtyMinutes: return "30 min"
+        case .oneHour: return "1 hour"
+        case .fourHours: return "4 hours"
+        case .eightHours: return "8 hours"
+        case .untilOff: return "Until off"
+        }
+    }
+
+    /// `nil` means keep running until the user turns radio off or force-quits.
+    var duration: TimeInterval? {
+        switch self {
+        case .thirtyMinutes: return 30 * 60
+        case .oneHour: return 60 * 60
+        case .fourHours: return 4 * 60 * 60
+        case .eightHours: return 8 * 60 * 60
+        case .untilOff: return nil
+        }
+    }
+}
+
 enum P2PConfig {
     /// Bonjour service type for MCNearbyServiceBrowser / Advertiser (1–15 chars).
     /// Info.plist must list `_cc-p2p._tcp`.

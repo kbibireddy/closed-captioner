@@ -26,6 +26,8 @@ final class P2PInboxService: NSObject, ObservableObject {
     var relayEnabled = false
     /// Newest messages are last. Capped at `P2PConfig.maxLogCount`.
     @Published private(set) var messages: [P2PLogEntry] = []
+    /// Seconds after radio-on to stop automatically. `nil` = until the user turns it off.
+    var autoStopAfter: TimeInterval? = RadioKeepAlive.fourHours.duration
     /// Live radio KPIs. Persist across radio on/off until the user resets them.
     @Published private(set) var connectedPeerCount = 0
     @Published private(set) var peakPeerCount = 0
@@ -50,6 +52,11 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var seenMessageIDs: [String] = []
     private var lastForwardAt = Date.distantPast
     private var knownConnected = Set<MCPeerID>()
+    private var listeningStartedAt: Date?
+    private var autoStopTimer: Timer?
+    #if os(iOS)
+    private var backgroundTask = UIBackgroundTaskIdentifier.invalid
+    #endif
 
     override init() {
         let rawName: String
@@ -77,23 +84,52 @@ final class P2PInboxService: NSObject, ObservableObject {
 
     func startListening() {
         startSession(resetStats: false)
+        listeningStartedAt = Date()
+        scheduleAutoStop()
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = true
+        #endif
     }
 
     /// Rebuild after returning from background. No-op if the session is already up
     /// (e.g. Control Center → `.inactive` → `.active` without a suspend).
     func rebuildSessionIfListening() {
-        guard isListening, session == nil else { return }
+        stopBackgroundTask()
+        checkAutoStopIfNeeded()
+        guard isListening else { return }
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = true
+        #endif
+        guard session == nil else { return }
         startSession(resetStats: false)
+        scheduleAutoStop()
     }
 
-    /// Drop radios while backgrounded; keep `isListening` so the icon stays on.
-    func suspendSessionKeepingIntent() {
+    /// Keep browse / advertise / session running while the app is backgrounded.
+    /// iOS may still freeze the process after a while; we do not tear the radio down ourselves.
+    func prepareForBackground() {
         guard isListening else { return }
-        recordDisconnectsForRemainingPeers()
-        tearDownSession()
+        checkAutoStopIfNeeded()
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = false
+        startBackgroundTask()
+        #endif
+    }
+
+    func applyAutoStopAfter(_ interval: TimeInterval?) {
+        autoStopAfter = interval
+        guard isListening else { return }
+        scheduleAutoStop()
     }
 
     func stopListening() {
+        autoStopTimer?.invalidate()
+        autoStopTimer = nil
+        listeningStartedAt = nil
+        stopBackgroundTask()
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = false
+        #endif
         recordDisconnectsForRemainingPeers()
         tearDownSession()
         if isListening {
@@ -102,6 +138,47 @@ final class P2PInboxService: NSObject, ObservableObject {
         isListening = false
         refreshPeerCount()
     }
+
+    private func scheduleAutoStop() {
+        autoStopTimer?.invalidate()
+        autoStopTimer = nil
+        guard isListening, let listeningStartedAt, let autoStopAfter else { return }
+        let remaining = autoStopAfter - Date().timeIntervalSince(listeningStartedAt)
+        if remaining <= 0 {
+            stopListening()
+            return
+        }
+        autoStopTimer = Timer.scheduledTimer(withTimeInterval: remaining, repeats: false) { [weak self] _ in
+            self?.stopListening()
+        }
+        if let autoStopTimer {
+            RunLoop.main.add(autoStopTimer, forMode: .common)
+        }
+    }
+
+    private func checkAutoStopIfNeeded() {
+        guard isListening, let listeningStartedAt, let autoStopAfter else { return }
+        if Date().timeIntervalSince(listeningStartedAt) >= autoStopAfter {
+            stopListening()
+        }
+    }
+
+    #if os(iOS)
+    private func startBackgroundTask() {
+        stopBackgroundTask()
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "nearby-radio") { [weak self] in
+            self?.stopBackgroundTask()
+        }
+    }
+
+    private func stopBackgroundTask() {
+        guard backgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
+    }
+    #else
+    private func stopBackgroundTask() {}
+    #endif
 
     /// Zeros traffic counters. Live peer count is refreshed if radio is still on.
     func resetKPIs() {

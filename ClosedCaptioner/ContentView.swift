@@ -140,6 +140,7 @@ struct ContentView: View {
         }
         .onAppear {
             p2pInbox.relayEnabled = appState.relayMessages
+            p2pInbox.applyAutoStopAfter(appState.radioKeepAlive.duration)
             setupAudioSession()
             requestPermissions()
             previousRecordingState = micController.isRecording
@@ -147,6 +148,9 @@ struct ContentView: View {
         }
         .onChange(of: appState.relayMessages) { enabled in
             p2pInbox.relayEnabled = enabled
+        }
+        .onChange(of: appState.radioKeepAlive) { keepAlive in
+            p2pInbox.applyAutoStopAfter(keepAlive.duration)
         }
         .onChange(of: appState.showSettings) { _ in
             updateShakeMonitoring()
@@ -159,7 +163,7 @@ struct ContentView: View {
             case .active:
                 p2pInbox.rebuildSessionIfListening()
             case .background:
-                p2pInbox.suspendSessionKeepingIntent()
+                p2pInbox.prepareForBackground()
             default:
                 break
             }
@@ -171,7 +175,6 @@ struct ContentView: View {
         .onDisappear {
             saveCurrentTextToHistory()
             speechService.stopRecording()
-            p2pInbox.stopListening()
             ShakeDetectionService.shared.stopMonitoring()
         }
     }
