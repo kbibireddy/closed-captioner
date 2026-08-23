@@ -10,6 +10,7 @@ import Foundation
 import MultipeerConnectivity
 #if os(iOS)
 import UIKit
+import UserNotifications
 #endif
 
 struct P2PLogEntry: Identifiable, Equatable {
@@ -27,7 +28,7 @@ final class P2PInboxService: NSObject, ObservableObject {
     /// Newest messages are last. Capped at `P2PConfig.maxLogCount`.
     @Published private(set) var messages: [P2PLogEntry] = []
     /// Seconds after radio-on to stop automatically. `nil` = until the user turns it off.
-    var autoStopAfter: TimeInterval? = RadioKeepAlive.fourHours.duration
+    var autoStopAfter: TimeInterval? = RadioKeepAlive.thirtyMinutes.duration
     /// Live radio KPIs. Persist across radio on/off until the user resets them.
     @Published private(set) var connectedPeerCount = 0
     @Published private(set) var peakPeerCount = 0
@@ -49,8 +50,8 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var browser: MCNearbyServiceBrowser?
     private var advertiser: MCNearbyServiceAdvertiser?
     private var invitedPeerIDs = Set<MCPeerID>()
+    private var inviteAttempts: [MCPeerID: Int] = [:]
     private var seenMessageIDs: [String] = []
-    private var lastForwardAt = Date.distantPast
     private var knownConnected = Set<MCPeerID>()
     private var listeningStartedAt: Date?
     private var autoStopTimer: Timer?
@@ -88,6 +89,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         scheduleAutoStop()
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = true
+        NearbyMeshNotice.requestPermissionIfNeeded()
         #endif
     }
 
@@ -129,11 +131,12 @@ final class P2PInboxService: NSObject, ObservableObject {
         stopBackgroundTask()
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = false
+        NearbyMeshNotice.clear()
         #endif
         recordDisconnectsForRemainingPeers()
         tearDownSession()
         if isListening {
-            print("[P2P] Radio off")
+            AppLog.debug("[P2P] Radio off")
         }
         isListening = false
         refreshPeerCount()
@@ -187,35 +190,36 @@ final class P2PInboxService: NSObject, ObservableObject {
     }
 
     /// Sends `text` to connected peers. On success, appends a local log row under `from`.
-    /// With no peers yet, the local log row still counts as a successful send (broadcast into an empty room).
+    /// Returns false when radio is off, the text is empty, nobody is connected, or the send fails.
     @discardableResult
     func broadcast(_ text: String, from displayName: String) -> Bool {
         guard isListening, let session else { return false }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
-        let sender = P2PConfig.normalizedName(displayName) ?? peerID.displayName
-        let messageID = UUID().uuidString
-        rememberSeen(messageID)
-        guard let data = P2PConfig.encode(trimmed, from: sender, id: messageID, hop: 0) else { return false }
 
         let peers = session.connectedPeers
-        if !peers.isEmpty {
-            do {
-                try session.send(data, toPeers: peers, with: .reliable)
-                messagesSent += 1
-                bytesSent += data.count
-            } catch {
-                print("[P2P] Send failed: \(error.localizedDescription)")
-                return false
-            }
-        } else {
-            messagesSent += 1
-            bytesSent += data.count
+        guard !peers.isEmpty else {
+            AppLog.debug("[P2P] Broadcast skipped — no connected peers")
+            return false
         }
 
+        let sender = P2PConfig.normalizedName(displayName) ?? peerID.displayName
+        let messageID = UUID().uuidString
+        guard let data = P2PConfig.encode(trimmed, from: sender, id: messageID, hop: 0) else { return false }
+
+        do {
+            try session.send(data, toPeers: peers, with: .reliable)
+        } catch {
+            AppLog.debug("[P2P] Send failed: \(error.localizedDescription)")
+            return false
+        }
+
+        rememberSeen(messageID)
+        messagesSent += 1
+        bytesSent += data.count
         appendMessage(senderName: sender, text: trimmed)
         lastHop = 0
-        print("[P2P] Broadcast \(trimmed.count) chars as \(sender) to \(peers.count) peer(s)")
+        AppLog.debug("[P2P] Broadcast \(trimmed.count) chars as \(sender) to \(peers.count) peer(s)")
         return true
     }
 
@@ -224,7 +228,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         let session = MCSession(
             peer: peerID,
             securityIdentity: nil,
-            encryptionPreference: .required
+            encryptionPreference: P2PConfig.encryptionPreference
         )
         session.delegate = self
         self.session = session
@@ -250,11 +254,12 @@ final class P2PInboxService: NSObject, ObservableObject {
         }
         knownConnected.removeAll()
         invitedPeerIDs.removeAll()
+        inviteAttempts.removeAll()
         isListening = true
         refreshPeerCount()
         browser.startBrowsingForPeers()
         advertiser.startAdvertisingPeer()
-        print("[P2P] Radio on — browsing + advertising \(P2PConfig.serviceType)")
+        AppLog.debug("[P2P] Radio on — browsing + advertising \(P2PConfig.serviceType)")
     }
 
     private func tearDownSession() {
@@ -268,6 +273,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         session?.delegate = nil
         session = nil
         invitedPeerIDs.removeAll()
+        inviteAttempts.removeAll()
         knownConnected.removeAll()
         connectedPeerCount = 0
     }
@@ -286,7 +292,6 @@ final class P2PInboxService: NSObject, ObservableObject {
         lastHop = 0
         bytesSent = 0
         bytesReceived = 0
-        lastForwardAt = .distantPast
     }
 
     private func refreshPeerCount() {
@@ -352,6 +357,39 @@ final class P2PInboxService: NSObject, ObservableObject {
         return instanceID < remoteID
     }
 
+    private func runOnMainSync(_ work: () -> Void) {
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.sync(execute: work)
+        }
+    }
+
+    private func invite(_ other: MCPeerID, using browser: MCNearbyServiceBrowser) {
+        guard isListening, let session else { return }
+        invitedPeerIDs.insert(other)
+        scheduleInviteTimeout(other)
+        AppLog.debug("[P2P] Inviting \(other.displayName)")
+        browser.invitePeer(other, to: session, withContext: nil, timeout: P2PConfig.inviteTimeoutSeconds)
+    }
+
+    private func retryInviteIfNeeded(_ other: MCPeerID) {
+        guard isListening else { return }
+        let attempts = inviteAttempts[other, default: 0]
+        guard attempts < P2PConfig.inviteRetryLimit else {
+            AppLog.debug("[P2P] Gave up inviting \(other.displayName)")
+            return
+        }
+        inviteAttempts[other] = attempts + 1
+        let delay = P2PConfig.inviteRetryDelaySeconds
+        AppLog.debug("[P2P] Retry \(attempts + 1)/\(P2PConfig.inviteRetryLimit) \(other.displayName)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.isListening, let browser = self.browser else { return }
+            guard self.session?.connectedPeers.contains(other) != true else { return }
+            self.invite(other, using: browser)
+        }
+    }
+
     private func scheduleInviteTimeout(_ peer: MCPeerID) {
         DispatchQueue.main.asyncAfter(deadline: .now() + P2PConfig.inviteTimeoutSeconds) { [weak self] in
             guard let self, self.isListening else { return }
@@ -359,7 +397,7 @@ final class P2PInboxService: NSObject, ObservableObject {
             if self.session?.connectedPeers.contains(peer) == true { return }
             self.invitedPeerIDs.remove(peer)
             self.inviteTimeouts += 1
-            print("[P2P] Invite timed out \(peer.displayName)")
+            AppLog.debug("[P2P] Invite timed out \(peer.displayName)")
         }
     }
 
@@ -389,10 +427,6 @@ final class P2PInboxService: NSObject, ObservableObject {
             return
         }
 
-        let now = Date()
-        guard now.timeIntervalSince(lastForwardAt) >= P2PConfig.minForwardInterval else { return }
-        lastForwardAt = now
-
         forward(envelope, id: messageID, hop: hop + 1, ttl: ttl, excluding: neighbor)
     }
 
@@ -418,33 +452,29 @@ final class P2PInboxService: NSObject, ObservableObject {
             messagesForwarded += 1
             bytesSent += data.count
         } catch {
-            print("[P2P] Forward failed: \(error.localizedDescription)")
+            AppLog.debug("[P2P] Forward failed: \(error.localizedDescription)")
         }
     }
 }
 
 extension P2PInboxService: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
-        DispatchQueue.main.async {
-            guard self.isListening, self.browser === browser, self.session != nil else { return }
+        runOnMainSync {
+            guard self.isListening, self.browser === browser else { return }
             guard self.shouldInvite(peerID, info: info) else { return }
-            guard let session = self.session else { return }
-            self.invitedPeerIDs.insert(peerID)
-            self.scheduleInviteTimeout(peerID)
-            print("[P2P] Inviting \(peerID.displayName)")
-            browser.invitePeer(peerID, to: session, withContext: nil, timeout: P2PConfig.inviteTimeoutSeconds)
+            self.invite(peerID, using: browser)
         }
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
-        DispatchQueue.main.async {
+        runOnMainSync {
             self.invitedPeerIDs.remove(peerID)
-            print("[P2P] Lost peer \(peerID.displayName)")
+            AppLog.debug("[P2P] Lost peer \(peerID.displayName)")
         }
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
-        print("[P2P] Browser failed: \(error.localizedDescription)")
+        AppLog.debug("[P2P] Browser failed: \(error.localizedDescription)")
         DispatchQueue.main.async {
             self.stopListening()
         }
@@ -458,22 +488,22 @@ extension P2PInboxService: MCNearbyServiceAdvertiserDelegate {
         withContext context: Data?,
         invitationHandler: @escaping (Bool, MCSession?) -> Void
     ) {
-        DispatchQueue.main.async {
-            guard self.isListening else {
-                invitationHandler(false, nil)
+        var accept = false
+        var session: MCSession?
+        runOnMainSync {
+            guard self.isListening, let live = self.session else { return }
+            if self.neighborSlotsFull() && live.connectedPeers.contains(peerID) != true {
                 return
             }
-            if self.neighborSlotsFull() && self.session?.connectedPeers.contains(peerID) != true {
-                invitationHandler(false, nil)
-                return
-            }
-            print("[P2P] Accepting \(peerID.displayName)")
-            invitationHandler(true, self.session)
+            accept = true
+            session = live
+            AppLog.debug("[P2P] Accepting \(peerID.displayName)")
         }
+        invitationHandler(accept, session)
     }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
-        print("[P2P] Advertise failed: \(error.localizedDescription)")
+        AppLog.debug("[P2P] Advertise failed: \(error.localizedDescription)")
     }
 }
 
@@ -482,29 +512,34 @@ extension P2PInboxService: MCSessionDelegate {
         DispatchQueue.main.async {
             switch state {
             case .notConnected:
+                let wasInviting = self.invitedPeerIDs.contains(peerID)
                 self.invitedPeerIDs.remove(peerID)
                 if self.knownConnected.contains(peerID) {
                     self.knownConnected.remove(peerID)
                     self.disconnectCount += 1
                 }
+                if wasInviting {
+                    self.retryInviteIfNeeded(peerID)
+                }
             case .connecting:
                 break
             case .connected:
                 self.invitedPeerIDs.remove(peerID)
+                self.inviteAttempts[peerID] = 0
                 if self.knownConnected.insert(peerID).inserted {
                     self.connectCount += 1
                 }
             @unknown default:
                 break
             }
-            print("[P2P] Session \(peerID.displayName) → \(String(describing: state))")
+            AppLog.debug("[P2P] Session \(peerID.displayName) → \(String(describing: state))")
             self.refreshPeerCount()
         }
     }
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         guard let envelope = P2PConfig.decode(data) else {
-            print("[P2P] Ignored undecodable payload from \(peerID.displayName)")
+            AppLog.debug("[P2P] Ignored undecodable payload from \(peerID.displayName)")
             return
         }
         DispatchQueue.main.async {
@@ -529,4 +564,89 @@ extension P2PInboxService: MCSessionDelegate {
         at localURL: URL?,
         withError error: Error?
     ) {}
+
+    func session(
+        _ session: MCSession,
+        didReceiveCertificate certificate: [Any]?,
+        fromPeer peerID: MCPeerID,
+        certificateHandler: @escaping (Bool) -> Void
+    ) {
+        certificateHandler(true)
+    }
 }
+
+#if os(iOS)
+/// System notification (lock screen / Notification Center), not an in-app banner.
+enum NearbyMeshNotice {
+    private static let identifier = "closedcaptioner.nearby-mesh-still-on"
+
+    static func requestPermissionIfNeeded() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error {
+                AppLog.debug("[Nearby] Notification auth error: \(error.localizedDescription)")
+            } else {
+                AppLog.debug("[Nearby] Notification permission granted=\(granted)")
+            }
+        }
+    }
+
+    /// Must run on the main thread and add the request immediately. Waiting on
+    /// `getNotificationSettings` lets iOS suspend the app before anything is scheduled.
+    static func postStillOnMesh(keepAlive: RadioKeepAlive) {
+        let work = {
+            addRequest(keepAlive: keepAlive)
+        }
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
+    }
+
+    static func cancelPending() {
+        let work = {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        }
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
+    }
+
+    static func clear() {
+        let work = {
+            let center = UNUserNotificationCenter.current()
+            center.removePendingNotificationRequests(withIdentifiers: [identifier])
+            center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        }
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
+    }
+
+    private static func addRequest(keepAlive: RadioKeepAlive) {
+        let content = UNMutableNotificationContent()
+        content.title = "Nearby is still on"
+        content.body = "This phone is still on the mesh. It can receive and send nearby messages. Turn Nearby off or close the app to leave. \(keepAlive.autoOffPhrase)"
+        content.sound = .default
+        content.interruptionLevel = .active
+
+        // Immediate (`trigger: nil`) is dropped if iOS still considers us on screen.
+        // Register a 1s timer with the system now — do not wait on permission APIs.
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.add(request) { error in
+            if let error {
+                AppLog.debug("[Nearby] Failed to schedule notification: \(error.localizedDescription)")
+            } else {
+                AppLog.debug("[Nearby] Scheduled mesh-still-on notification")
+            }
+        }
+    }
+}
+#endif

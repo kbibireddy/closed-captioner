@@ -31,6 +31,8 @@ struct ContentView: View {
     }
     
     var body: some View {
+        // Touch fontChoice so changing Fonts rebuilds every AppType.display call site.
+        let _ = appState.fontChoice
         ZStack {
             // Background color based on mode
             appState.colors.background
@@ -159,15 +161,17 @@ struct ContentView: View {
             updateShakeMonitoring()
         }
         .onChange(of: scenePhase) { phase in
-            switch phase {
-            case .active:
-                p2pInbox.rebuildSessionIfListening()
-            case .background:
-                p2pInbox.prepareForBackground()
-            default:
-                break
-            }
-            updateShakeMonitoring()
+            handleScenePhase(phase)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            scheduleMeshNoticeIfListening()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+            p2pInbox.prepareForBackground()
+            scheduleMeshNoticeIfListening()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            cancelMeshNoticeIfForeground()
         }
         .onShake {
             handleShake()
@@ -178,7 +182,33 @@ struct ContentView: View {
             ShakeDetectionService.shared.stopMonitoring()
         }
     }
-    
+
+    private func handleScenePhase(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            cancelMeshNoticeIfForeground()
+            p2pInbox.rebuildSessionIfListening()
+        case .inactive, .background:
+            scheduleMeshNoticeIfListening()
+            if phase == .background {
+                p2pInbox.prepareForBackground()
+            }
+        default:
+            break
+        }
+        updateShakeMonitoring()
+    }
+
+    private func scheduleMeshNoticeIfListening() {
+        guard p2pInbox.isListening else { return }
+        NearbyMeshNotice.postStillOnMesh(keepAlive: appState.radioKeepAlive)
+    }
+
+    private func cancelMeshNoticeIfForeground() {
+        guard UIApplication.shared.applicationState == .active else { return }
+        NearbyMeshNotice.cancelPending()
+    }
+
     /// Accelerometer runs only in the foreground on the caption canvas.
     private func updateShakeMonitoring() {
         let shouldRun = scenePhase == .active
@@ -196,23 +226,24 @@ struct ContentView: View {
         do {
             try AudioService.shared.setupAudioSession()
         } catch {
-            print("[ContentView] ERROR: Failed to setup audio session: \(error)")
+            AppLog.debug("[ContentView] ERROR: Failed to setup audio session: \(error)")
         }
     }
     
-    /// Requests microphone and speech recognition permissions
+    /// Requests microphone, speech recognition, and notification permissions
     private func requestPermissions() {
+        NearbyMeshNotice.requestPermissionIfNeeded()
         AudioService.shared.requestMicrophonePermission { allowed in
             if allowed {
                 DispatchQueue.main.async {
                     self.speechService.requestAuthorization { authorized in
                         if !authorized {
-                            print("[ContentView] ERROR: Speech permission denied")
+                            AppLog.debug("[ContentView] ERROR: Speech permission denied")
                         }
                     }
                 }
             } else {
-                print("[ContentView] ERROR: Microphone permission denied")
+                AppLog.debug("[ContentView] ERROR: Microphone permission denied")
             }
         }
     }
@@ -246,14 +277,13 @@ struct ContentView: View {
         guard !text.isEmpty else { return }
 
         isSendingCaption = true
-        if micController.isRecording {
-            micController.stopRecording()
-        }
-
         let sent = p2pInbox.broadcast(text, from: appState.displayName)
         guard sent else {
             isSendingCaption = false
             return
+        }
+        if micController.isRecording {
+            micController.stopRecording()
         }
 
         saveCurrentTextToHistory()

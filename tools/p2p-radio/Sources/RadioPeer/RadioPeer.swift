@@ -11,6 +11,7 @@ final class RadioPeer: NSObject {
     private let browser: MCNearbyServiceBrowser
     private var pendingText: String?
     private var invitedPeerIDs = Set<MCPeerID>()
+    private var inviteAttempts: [MCPeerID: Int] = [:]
     private let lock = NSLock()
 
     private static let timeFormatter: DateFormatter = {
@@ -26,7 +27,7 @@ final class RadioPeer: NSObject {
         self.session = MCSession(
             peer: peerID,
             securityIdentity: nil,
-            encryptionPreference: .required
+            encryptionPreference: P2PConfig.encryptionPreference
         )
         self.advertiser = MCNearbyServiceAdvertiser(
             peer: peerID,
@@ -104,6 +105,27 @@ final class RadioPeer: NSObject {
         let remoteID = info?[P2PConfig.discoveryPeerIDKey] ?? other.displayName
         return instanceID < remoteID
     }
+
+    private func invite(_ other: MCPeerID) {
+        invitedPeerIDs.insert(other)
+        print("[p2p-radio] Inviting \(other.displayName)")
+        browser.invitePeer(other, to: session, withContext: nil, timeout: P2PConfig.inviteTimeoutSeconds)
+    }
+
+    private func retryInviteIfNeeded(_ other: MCPeerID) {
+        let attempts = inviteAttempts[other, default: 0]
+        guard attempts < P2PConfig.inviteRetryLimit else {
+            print("[p2p-radio] Gave up inviting \(other.displayName)")
+            return
+        }
+        inviteAttempts[other] = attempts + 1
+        print("[p2p-radio] Retry \(attempts + 1)/\(P2PConfig.inviteRetryLimit) \(other.displayName)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + P2PConfig.inviteRetryDelaySeconds) { [weak self] in
+            guard let self else { return }
+            guard !self.session.connectedPeers.contains(other) else { return }
+            self.invite(other)
+        }
+    }
 }
 
 extension RadioPeer: MCNearbyServiceAdvertiserDelegate {
@@ -125,9 +147,7 @@ extension RadioPeer: MCNearbyServiceAdvertiserDelegate {
 extension RadioPeer: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
         guard shouldInvite(peerID, info: info) else { return }
-        invitedPeerIDs.insert(peerID)
-        print("[p2p-radio] Inviting \(peerID.displayName)")
-        browser.invitePeer(peerID, to: session, withContext: nil, timeout: 12)
+        invite(peerID)
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
@@ -142,17 +162,25 @@ extension RadioPeer: MCNearbyServiceBrowserDelegate {
 
 extension RadioPeer: MCSessionDelegate {
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
-        switch state {
-        case .connected:
-            print("[p2p-radio] Connected \(peerID.displayName)")
-            transmitPending()
-        case .connecting:
-            print("[p2p-radio] Connecting \(peerID.displayName)")
-        case .notConnected:
-            invitedPeerIDs.remove(peerID)
-            print("[p2p-radio] Disconnected \(peerID.displayName)")
-        @unknown default:
-            break
+        DispatchQueue.main.async {
+            switch state {
+            case .connected:
+                print("[p2p-radio] Connected \(peerID.displayName)")
+                self.invitedPeerIDs.remove(peerID)
+                self.inviteAttempts[peerID] = 0
+                self.transmitPending()
+            case .connecting:
+                print("[p2p-radio] Connecting \(peerID.displayName)")
+            case .notConnected:
+                let wasInviting = self.invitedPeerIDs.contains(peerID)
+                self.invitedPeerIDs.remove(peerID)
+                print("[p2p-radio] Disconnected \(peerID.displayName)")
+                if wasInviting {
+                    self.retryInviteIfNeeded(peerID)
+                }
+            @unknown default:
+                break
+            }
         }
     }
 
@@ -181,4 +209,13 @@ extension RadioPeer: MCSessionDelegate {
         at localURL: URL?,
         withError error: Error?
     ) {}
+
+    func session(
+        _ session: MCSession,
+        didReceiveCertificate certificate: [Any]?,
+        fromPeer peerID: MCPeerID,
+        certificateHandler: @escaping (Bool) -> Void
+    ) {
+        certificateHandler(true)
+    }
 }

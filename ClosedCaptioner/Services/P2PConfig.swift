@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import MultipeerConnectivity
 
 /// How long radio stays on after you enable it (including in the background).
 enum RadioKeepAlive: String, CaseIterable, Identifiable {
@@ -38,6 +39,16 @@ enum RadioKeepAlive: String, CaseIterable, Identifiable {
         case .untilOff: return nil
         }
     }
+
+    var autoOffPhrase: String {
+        switch self {
+        case .thirtyMinutes: return "It turns off automatically in 30 minutes."
+        case .oneHour: return "It turns off automatically in 1 hour."
+        case .fourHours: return "It turns off automatically in 4 hours."
+        case .eightHours: return "It turns off automatically in 8 hours."
+        case .untilOff: return "It stays on until you turn Nearby off or close the app."
+        }
+    }
 }
 
 enum P2PConfig {
@@ -53,8 +64,11 @@ enum P2PConfig {
     static let defaultTTL = 4
     static let maxNeighbors = 6
     static let inviteTimeoutSeconds: TimeInterval = 12
+    /// iOS↔macOS Multipeer ICE often fails with `.required` and no identity.
+    static let encryptionPreference: MCEncryptionPreference = .optional
+    static let inviteRetryLimit = 4
+    static let inviteRetryDelaySeconds: TimeInterval = 1.5
     static let maxSeenIDs = 500
-    static let minForwardInterval: TimeInterval = 0.5
 
     /// v1 compatible JSON. Extra fields are ignored by older decoders.
     struct Envelope: Codable, Equatable {

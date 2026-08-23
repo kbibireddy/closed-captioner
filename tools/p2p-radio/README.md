@@ -50,6 +50,8 @@ Ctrl+C stops.
 - App backgrounded or on the Settings overlay the whole time (stay on the main caption screen).
 - Mac firewall blocking Bonjour (rare on the same Wi‑Fi).
 - Service type mismatch: both sides must use `cc-p2p` (see `P2PConfig.swift`).
+- Stale `p2p-radio` process: quit the old terminal (`Ctrl+C`) and `swift run` again, then toggle radio off/on on the phone.
+- Phone log shows `Inviting … → connecting → notConnected`: rebuild the app (encryption is optional for iOS↔Mac) and restart the Mac tool. Allow **Local Network** for Terminal if macOS asks.
 
 This stub travels over **local Wi‑Fi / Bonjour** more often than Bluetooth. Two iPhones are still required to prove Bluetooth in a room with no network.
 

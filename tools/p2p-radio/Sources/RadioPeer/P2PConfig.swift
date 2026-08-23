@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import MultipeerConnectivity
 
 enum P2PConfig {
     static let serviceType = "cc-p2p"
@@ -16,8 +17,11 @@ enum P2PConfig {
     static let defaultTTL = 4
     static let maxNeighbors = 6
     static let inviteTimeoutSeconds: TimeInterval = 12
+    /// iOS↔macOS Multipeer ICE often fails with `.required` and no identity.
+    static let encryptionPreference: MCEncryptionPreference = .optional
+    static let inviteRetryLimit = 4
+    static let inviteRetryDelaySeconds: TimeInterval = 1.5
     static let maxSeenIDs = 500
-    static let minForwardInterval: TimeInterval = 0.5
 
     struct Envelope: Codable, Equatable {
         var v: Int
