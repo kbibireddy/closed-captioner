@@ -101,11 +101,11 @@ private struct BannerViewRepresentable: UIViewRepresentable {
         weak var banner: BannerView?
 
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
-            print("[BannerAd] did receive ad")
+            AppLog.debug("[BannerAd] did receive ad")
         }
 
         func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
-            print("[BannerAd] failed: \(error.localizedDescription)")
+            AppLog.debug("[BannerAd] failed: \(error.localizedDescription)")
         }
     }
 }

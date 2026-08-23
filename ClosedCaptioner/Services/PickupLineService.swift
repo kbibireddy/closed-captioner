@@ -27,7 +27,7 @@ class PickupLineService {
     private func loadPickupLines() {
         guard let path = Bundle.main.path(forResource: "pickupCatalog", ofType: "txt"),
               let content = try? String(contentsOfFile: path) else {
-            print("[PickupLineService] WARNING: pickupCatalog.txt not found, using fallback")
+            AppLog.debug("[PickupLineService] WARNING: pickupCatalog.txt not found, using fallback")
             pickupLines = [
                 "Are you a magician? Because whenever I look at you, everyone else disappears.",
                 "You must be a camera because every time I look at you, I smile.",
@@ -41,7 +41,7 @@ class PickupLineService {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         
-        print("[PickupLineService] Loaded \(pickupLines.count) pickup lines")
+        AppLog.debug("[PickupLineService] Loaded \(pickupLines.count) pickup lines")
     }
     
     /// Gets a pickup line based on shake strength
@@ -95,7 +95,7 @@ class PickupLineService {
         }
         
         lastSelectedIndex = selectedIndex
-        print("[PickupLineService] Shake strength: \(String(format: "%.2f", shakeStrength)), Selected index: \(selectedIndex)/\(totalLines-1) (target: \(targetIndex))")
+        AppLog.debug("[PickupLineService] Shake strength: \(String(format: "%.2f", shakeStrength)), Selected index: \(selectedIndex)/\(totalLines-1) (target: \(targetIndex))")
         
         return pickupLines[selectedIndex]
     }

@@ -42,7 +42,7 @@ class MicController: ObservableObject, MicControlProtocol {
     /// The timer is armed only when speech recognition actually started.
     func startRecording() {
         guard !isRecording else { return }
-        print("[MicController] Starting recording")
+        AppLog.debug("[MicController] Starting recording")
         speechService.startRecording()
         guard speechService.isRecording else { return }
         
@@ -55,7 +55,7 @@ class MicController: ObservableObject, MicControlProtocol {
     /// Stops recording audio and cleans up the timer
     func stopRecording() {
         guard isRecording else { return }
-        print("[MicController] Stopping recording")
+        AppLog.debug("[MicController] Stopping recording")
         
         recordingTimer?.invalidate()
         recordingTimer = nil

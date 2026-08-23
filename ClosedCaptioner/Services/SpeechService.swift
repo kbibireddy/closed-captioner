@@ -81,12 +81,12 @@ class SpeechService: ObservableObject {
     @discardableResult
     private func startRecognition() -> Bool {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            print("[SpeechService] ERROR: Speech recognizer not available")
+            AppLog.debug("[SpeechService] ERROR: Speech recognizer not available")
             return false
         }
         
         if isRecording {
-            print("[SpeechService] WARNING: Already recording, stopping first")
+            AppLog.debug("[SpeechService] WARNING: Already recording, stopping first")
             stopRecognition()
         }
         
@@ -106,7 +106,7 @@ class SpeechService: ObservableObject {
         inputNode = input
         let recordingFormat = input.outputFormat(forBus: 0)
         guard recordingFormat.sampleRate > 0, recordingFormat.channelCount > 0 else {
-            print("[SpeechService] ERROR: Invalid input format")
+            AppLog.debug("[SpeechService] ERROR: Invalid input format")
             abortFailedStart()
             return false
         }
@@ -121,7 +121,7 @@ class SpeechService: ObservableObject {
         do {
             try audioEngine.start()
         } catch {
-            print("[SpeechService] ERROR: Audio engine could not start: \(error)")
+            AppLog.debug("[SpeechService] ERROR: Audio engine could not start: \(error)")
             abortFailedStart()
             return false
         }
@@ -137,7 +137,7 @@ class SpeechService: ObservableObject {
     
     private func handleRecognitionUpdate(result: SFSpeechRecognitionResult?, error: Error?) {
         if let error {
-            print("[SpeechService] ERROR: Recognition error: \(error.localizedDescription)")
+            AppLog.debug("[SpeechService] ERROR: Recognition error: \(error.localizedDescription)")
         }
         let shouldStop = result?.isFinal == true || error != nil
         DispatchQueue.main.async { [weak self] in
@@ -158,9 +158,9 @@ class SpeechService: ObservableObject {
         if newBaseText != currentBaseText && !newBaseText.isEmpty {
             currentText = newRawText
             emojisAddedForCurrentText = false
-            print("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
+            AppLog.debug("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
         } else if newBaseText == currentBaseText {
-            print("[SpeechService] Text unchanged, keeping existing text with emojis")
+            AppLog.debug("[SpeechService] Text unchanged, keeping existing text with emojis")
         }
     }
     
@@ -192,7 +192,7 @@ class SpeechService: ObservableObject {
         isStopping = true
         defer { isStopping = false }
         
-        print("[SpeechService] Stopping speech recognition...")
+        AppLog.debug("[SpeechService] Stopping speech recognition...")
         
         textStabilityTimer?.invalidate()
         textStabilityTimer = nil
@@ -207,7 +207,7 @@ class SpeechService: ObservableObject {
             textIsFromSpeech = false
         }
         
-        print("[SpeechService] Speech recognition stopped")
+        AppLog.debug("[SpeechService] Speech recognition stopped")
     }
     
     /// Handles text changes and schedules emoji insertion after text stabilizes
@@ -247,29 +247,29 @@ class SpeechService: ObservableObject {
     private func addEmojisToText() {
         // Don't add emojis if they're already present and we've already added them
         if emojisAddedForCurrentText {
-            print("[SpeechService] EmojiService: Already added emojis, skipping")
+            AppLog.debug("[SpeechService] EmojiService: Already added emojis, skipping")
             return
         }
         
         // Check if emojis are already added to current text (avoid duplicates)
         if currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
-            print("[SpeechService] EmojiService: Emojis already in text, marking as added")
+            AppLog.debug("[SpeechService] EmojiService: Emojis already in text, marking as added")
             emojisAddedForCurrentText = true
             return
         }
         
         guard !currentText.isEmpty else {
-            print("[SpeechService] EmojiService: Text is empty, skipping")
+            AppLog.debug("[SpeechService] EmojiService: Text is empty, skipping")
             return
         }
         
-        print("[SpeechService] EmojiService: Analyzing text: '\(currentText)'")
+        AppLog.debug("[SpeechService] EmojiService: Analyzing text: '\(currentText)'")
         
         // Perform emoji analysis on background thread for better performance
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             let emojis = EmojiService.shared.analyzeTextForEmojis(text: self.currentText)
-            print("[SpeechService] EmojiService: Got emojis: '\(emojis)'")
+            AppLog.debug("[SpeechService] EmojiService: Got emojis: '\(emojis)'")
             
             DispatchQueue.main.async {
                 // Double-check text hasn't changed and emojis not already added
@@ -278,11 +278,11 @@ class SpeechService: ObservableObject {
                     if !self.currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
                         if !emojis.isEmpty {
                             self.currentText = self.currentText + " " + emojis
-                            print("[SpeechService] EmojiService: Added emojis to text")
+                            AppLog.debug("[SpeechService] EmojiService: Added emojis to text")
                         } else {
                             // Final fallback - always add at least one emoji
                             self.currentText = self.currentText + " " + "💭"
-                            print("[SpeechService] EmojiService: Added fallback emoji")
+                            AppLog.debug("[SpeechService] EmojiService: Added fallback emoji")
                         }
                     }
                     self.emojisAddedForCurrentText = true

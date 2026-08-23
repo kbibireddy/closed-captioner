@@ -74,7 +74,7 @@ class HistoryManager: ObservableObject {
             let encoded = try JSONEncoder().encode(captions)
             userDefaults.set(encoded, forKey: historyKey)
         } catch {
-            print("[HistoryManager] ERROR: Failed to save history: \(error)")
+            AppLog.debug("[HistoryManager] ERROR: Failed to save history: \(error)")
         }
     }
     
@@ -85,7 +85,7 @@ class HistoryManager: ObservableObject {
         do {
             captions = try JSONDecoder().decode([CaptionText].self, from: data)
         } catch {
-            print("[HistoryManager] ERROR: Failed to load history: \(error)")
+            AppLog.debug("[HistoryManager] ERROR: Failed to load history: \(error)")
             captions = []
         }
     }

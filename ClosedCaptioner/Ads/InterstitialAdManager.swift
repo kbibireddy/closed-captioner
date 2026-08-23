@@ -24,10 +24,10 @@ final class InterstitialAdManager: NSObject {
                 self.interstitialAd = ad
                 ad.fullScreenContentDelegate = self
                 self.isLoading = false
-                print("[InterstitialAd] loaded")
+                AppLog.debug("[InterstitialAd] loaded")
             } catch {
                 self.isLoading = false
-                print("[InterstitialAd] load failed: \(error.localizedDescription)")
+                AppLog.debug("[InterstitialAd] load failed: \(error.localizedDescription)")
             }
         }
     }
@@ -55,7 +55,7 @@ extension InterstitialAdManager: FullScreenContentDelegate {
         _ ad: FullScreenPresentingAd,
         didFailToPresentFullScreenContentWithError error: Error
     ) {
-        print("[InterstitialAd] present failed: \(error.localizedDescription)")
+        AppLog.debug("[InterstitialAd] present failed: \(error.localizedDescription)")
         load()
     }
 }

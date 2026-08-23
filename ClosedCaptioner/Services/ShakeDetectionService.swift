@@ -38,7 +38,7 @@ class ShakeDetectionService: ObservableObject {
     /// Configures the motion manager for accelerometer monitoring
     private func setupMotionManager() {
         guard motionManager.isAccelerometerAvailable else {
-            print("[ShakeDetectionService] WARNING: Accelerometer not available")
+            AppLog.debug("[ShakeDetectionService] WARNING: Accelerometer not available")
             return
         }
         
@@ -53,7 +53,7 @@ class ShakeDetectionService: ObservableObject {
         
         motionManager.startAccelerometerUpdates(to: motionQueue) { [weak self] (data, error) in
             if let error = error {
-                print("[ShakeDetectionService] ERROR: Accelerometer update error: \(error.localizedDescription)")
+                AppLog.debug("[ShakeDetectionService] ERROR: Accelerometer update error: \(error.localizedDescription)")
                 return
             }
             guard let self = self, let data = data else { return }
@@ -106,7 +106,7 @@ class ShakeDetectionService: ObservableObject {
         let scaledStrength = min(strength * 3.0, MAX_SHAKE_STRENGTH)
         
         if scaledStrength > 0.5 {
-            print("[ShakeDetectionService] Shake analysis (samples: \(recentMotionData.count)): max=\(String(format: "%.2f", maxAcceleration)), variance=\(String(format: "%.2f", variance)), mean=\(String(format: "%.2f", mean)), strength=\(String(format: "%.2f", scaledStrength))")
+            AppLog.debug("[ShakeDetectionService] Shake analysis (samples: \(recentMotionData.count)): max=\(String(format: "%.2f", maxAcceleration)), variance=\(String(format: "%.2f", variance)), mean=\(String(format: "%.2f", mean)), strength=\(String(format: "%.2f", scaledStrength))")
         }
         
         recentMotionData.removeAll()

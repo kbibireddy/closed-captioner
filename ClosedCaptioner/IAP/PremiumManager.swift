@@ -61,10 +61,10 @@ final class PremiumManager: ObservableObject {
             productsLoaded = true
 
             if map.isEmpty {
-                print("[PremiumManager] StoreKit returned no products for \(requested)")
+                AppLog.debug("[PremiumManager] StoreKit returned no products for \(requested)")
                 errorMessage = Self.emptyCatalogMessage
             } else {
-                print("[PremiumManager] Loaded products: \(map.keys.sorted())")
+                AppLog.debug("[PremiumManager] Loaded products: \(map.keys.sorted())")
                 if errorMessage == Self.emptyCatalogMessage
                     || errorMessage?.localizedCaseInsensitiveContains("unavailable") == true {
                     errorMessage = nil
@@ -72,7 +72,7 @@ final class PremiumManager: ObservableObject {
             }
         } catch {
             productsLoaded = true
-            print("[PremiumManager] Failed to load products: \(error.localizedDescription)")
+            AppLog.debug("[PremiumManager] Failed to load products: \(error.localizedDescription)")
             errorMessage = "Purchase unavailable. \(error.localizedDescription)"
         }
     }
