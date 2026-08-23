@@ -7,11 +7,12 @@
 
 import SwiftUI
 
-/// Top bar → top banner → captions (behind spacer) → bottom banner → bottom bar.
+/// Top bar → top banner → captions (behind spacer) → nearby log → bottom banner → bottom bar.
 /// One VStack so banners cannot overlay the control buttons.
 struct ControlsView: View {
     @ObservedObject var micController: MicController
     @ObservedObject var appState: AppStateViewModel
+    @ObservedObject var p2pInbox: P2PInboxService
     @ObservedObject private var premiumManager = PremiumManager.shared
     let onClear: () -> Void
 
@@ -35,6 +36,16 @@ struct ControlsView: View {
             }
 
             Spacer(minLength: 0)
+                .allowsHitTesting(false)
+
+            if p2pInbox.isListening {
+                P2PMessageLogView(
+                    colors: appState.colors,
+                    entries: p2pInbox.messages
+                )
+                .layoutPriority(1)
+                .zIndex(9)
+            }
 
             if showBanners {
                 BannerAdView(adUnitID: AdConfig.bottomBannerAdUnitID)
@@ -64,6 +75,36 @@ struct ControlsView: View {
             .accessibilityLabel("Settings")
 
             Spacer()
+
+            Button(action: {
+                p2pInbox.toggleListening()
+            }) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(AppType.ui(18, weight: .semibold))
+                    .foregroundColor(
+                        p2pInbox.isListening
+                            ? appState.colors.onAccentFill
+                            : appState.colors.text
+                    )
+                    .frame(width: 44, height: 44)
+                    .background(
+                        p2pInbox.isListening
+                            ? appState.colors.accentFill
+                            : appState.colors.buttonBackground
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
+                    )
+            }
+            .accessibilityLabel(
+                p2pInbox.isListening
+                    ? "Stop listening for nearby messages"
+                    : "Listen for nearby messages"
+            )
+            .accessibilityAddTraits(.isButton)
+            .accessibilityValue(p2pInbox.isListening ? "On" : "Off")
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)

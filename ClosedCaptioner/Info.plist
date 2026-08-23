@@ -4,6 +4,17 @@
 <dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Closed Captioner uses the local network to receive nearby caption messages when the radio is on. Nothing is sent over the internet.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_cc-p2p._tcp</string>
+		<string>_cc-p2p._udp</string>
+	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Closed Captioner can use Bluetooth to receive nearby caption messages when Wi-Fi is unavailable.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Closed Captioner can use Bluetooth to receive nearby caption messages when Wi-Fi is unavailable.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-7546535789763376~8583143111</string>
 	<key>SKAdNetworkItems</key>

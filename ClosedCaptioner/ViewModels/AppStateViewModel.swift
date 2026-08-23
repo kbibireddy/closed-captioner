@@ -11,6 +11,7 @@ import SwiftUI
 class AppStateViewModel: ObservableObject {
     private static let themeDefaultsKey = "ClosedCaptioner.appTheme"
     private static let colorModeDefaultsKey = "ClosedCaptioner.colorMode"
+    private static let displayNameDefaultsKey = "ClosedCaptioner.displayName"
 
     /// Day or night appearance
     @Published var colorMode: ColorMode {
@@ -22,6 +23,12 @@ class AppStateViewModel: ObservableObject {
     @Published var theme: AppTheme {
         didSet {
             UserDefaults.standard.set(theme.rawValue, forKey: Self.themeDefaultsKey)
+        }
+    }
+    /// Nearby identity. Defaults to the device host name; user can set any name.
+    @Published var displayName: String {
+        didSet {
+            UserDefaults.standard.set(displayName, forKey: Self.displayNameDefaultsKey)
         }
     }
     /// Whether the keyboard editing view is visible
@@ -60,6 +67,23 @@ class AppStateViewModel: ObservableObject {
             self.theme = AppTheme(rawValue: savedTheme ?? "") ?? .grove
             self.colorMode = ColorMode(rawValue: savedMode ?? "") ?? .night
         }
+
+        let savedName = defaults.string(forKey: Self.displayNameDefaultsKey)
+        if let savedName, let normalized = P2PConfig.normalizedName(savedName) {
+            self.displayName = normalized
+        } else {
+            self.displayName = Self.hostDisplayName()
+        }
+    }
+
+    /// Device host name used until the user picks a display name.
+    static func hostDisplayName() -> String {
+        P2PConfig.normalizedName(UIDevice.current.name) ?? "ClosedCaptioner"
+    }
+
+    /// Empty or whitespace falls back to the host name.
+    func commitDisplayName() {
+        displayName = P2PConfig.normalizedName(displayName) ?? Self.hostDisplayName()
     }
 
     /// Clears the screen with a flash animation followed by a poof animation

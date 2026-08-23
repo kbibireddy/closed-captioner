@@ -15,9 +15,13 @@ struct ContentView: View {
     @StateObject private var appState = AppStateViewModel()
     @StateObject private var micController: MicController
     @StateObject private var historyManager = HistoryManager.shared
+    @StateObject private var p2pInbox = P2PInboxService()
     @State private var editedText = ""
     @State private var previousRecordingState: Bool = false
     @State private var shakeCooldownActive: Bool = false
+    @State private var captionFlyOffset: CGFloat = 0
+    @State private var captionFlyOpacity: Double = 1
+    @State private var isSendingCaption = false
     
     init() {
         let speechService = SpeechService()
@@ -53,15 +57,21 @@ struct ContentView: View {
                         .tracking(-1.8)
                         .foregroundColor(appState.colors.text)
                         .opacity(appState.poofOpacity)
-                } else {
-                    if !speechService.currentText.isEmpty {
-                        CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
-                    } else if micController.isRecording {
-                        Text("Listening…")
-                            .font(AppType.display(40))
-                            .tracking(-1.2)
-                            .foregroundColor(appState.colors.muted)
-                    }
+                } else if !speechService.currentText.isEmpty {
+                    CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
+                        .offset(y: captionFlyOffset)
+                        .opacity(captionFlyOpacity)
+                        .gesture(broadcastSwipeGesture)
+                        .accessibilityHint(
+                            p2pInbox.isListening
+                                ? "Swipe up to send this caption to nearby Closed Captioner devices"
+                                : ""
+                        )
+                } else if micController.isRecording {
+                    Text("Listening…")
+                        .font(AppType.display(40))
+                        .tracking(-1.2)
+                        .foregroundColor(appState.colors.muted)
                 }
 
                 Spacer()
@@ -73,6 +83,7 @@ struct ContentView: View {
             ControlsView(
                 micController: micController,
                 appState: appState,
+                p2pInbox: p2pInbox,
                 onClear: {
                     saveCurrentTextToHistory()
                     appState.clearScreen()
@@ -138,6 +149,7 @@ struct ContentView: View {
             // Save current text before app closes
             saveCurrentTextToHistory()
             speechService.stopRecording()
+            p2pInbox.stopListening()
         }
     }
     
@@ -167,6 +179,61 @@ struct ContentView: View {
         }
     }
     
+    private var broadcastSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                handleBroadcastSwipe(translation: value.translation)
+            }
+    }
+
+    private var canBroadcastCaption: Bool {
+        p2pInbox.isListening
+            && !speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !appState.showSettings
+            && !appState.showKeyboard
+            && !appState.showPoofAnimation
+            && !isSendingCaption
+    }
+
+    /// Swipe up while radio is on: send nearby, keep history, fly the caption off-screen.
+    private func handleBroadcastSwipe(translation: CGSize) {
+        guard canBroadcastCaption else { return }
+        let isUp = translation.height < -56 && abs(translation.height) > abs(translation.width)
+        guard isUp else { return }
+        sendCaptionNearby()
+    }
+
+    private func sendCaptionNearby() {
+        let text = speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        isSendingCaption = true
+        if micController.isRecording {
+            micController.stopRecording()
+        }
+
+        let sent = p2pInbox.broadcast(text, from: appState.displayName)
+        guard sent else {
+            isSendingCaption = false
+            return
+        }
+
+        saveCurrentTextToHistory()
+
+        let travel = UIScreen.main.bounds.height * 0.75
+        withAnimation(.easeIn(duration: 0.42)) {
+            captionFlyOffset = -travel
+            captionFlyOpacity = 0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            speechService.currentText = ""
+            captionFlyOffset = 0
+            captionFlyOpacity = 1
+            isSendingCaption = false
+        }
+    }
+
     /// Saves the current text to history if it's valid and different from the last saved caption
     private func saveCurrentTextToHistory() {
         let text = speechService.currentText

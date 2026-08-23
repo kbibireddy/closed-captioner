@@ -11,12 +11,57 @@ struct GeneralSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
+                userInfoSection
                 appearanceSection
                 themeSection
             }
             .padding(20)
         }
         .background(appState.colors.background)
+        .onDisappear {
+            appState.commitDisplayName()
+        }
+    }
+
+    private var userInfoSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("User info")
+                .font(AppType.display(26))
+                .tracking(-0.8)
+                .foregroundColor(appState.colors.text)
+
+            Text("This name is shown on nearby messages you send. It starts as this device’s host name.")
+                .font(AppType.ui(14, weight: .medium))
+                .foregroundColor(appState.colors.muted)
+                .padding(.bottom, 4)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Display name")
+                    .font(AppType.ui(13, weight: .bold))
+                    .foregroundColor(appState.colors.muted)
+
+                TextField(AppStateViewModel.hostDisplayName(), text: $appState.displayName)
+                    .font(AppType.ui(17, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(appState.colors.card)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
+                    )
+                    .onChange(of: appState.displayName) { newValue in
+                        if newValue.count > P2PConfig.maxDisplayNameLength {
+                            appState.displayName = String(newValue.prefix(P2PConfig.maxDisplayNameLength))
+                        }
+                    }
+                    .onSubmit {
+                        appState.commitDisplayName()
+                    }
+                    .submitLabel(.done)
+            }
+        }
     }
 
     private var appearanceSection: some View {

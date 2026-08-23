@@ -42,6 +42,9 @@
 		EB6760402EAF6000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760412EAF6000000001 /* SettingsView.swift */; };
 		EB6760422EAF6000000001 /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760432EAF6000000001 /* PurchasesView.swift */; };
 		EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6770612EAF8000000001 /* GeneralSettingsView.swift */; };
+		EB6780702EAF9000000001 /* P2PConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780712EAF9000000001 /* P2PConfig.swift */; };
+		EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780732EAF9000000001 /* P2PInboxService.swift */; };
+		EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780812EAFA000000001 /* P2PMessageLogView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +84,9 @@
 		EB6760412EAF6000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EB6760432EAF6000000001 /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
 		EB6770612EAF8000000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		EB6780712EAF9000000001 /* P2PConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PConfig.swift; sourceTree = "<group>"; };
+		EB6780732EAF9000000001 /* P2PInboxService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PInboxService.swift; sourceTree = "<group>"; };
+		EB6780812EAFA000000001 /* P2PMessageLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PMessageLogView.swift; sourceTree = "<group>"; };
 		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -215,6 +221,8 @@
 				EB6750022EAF4000000000 /* SpeechService.swift */,
 				EB6750272EAF4006000000 /* PickupLineService.swift */,
 				EB6750292EAF4007000000 /* ShakeDetectionService.swift */,
+				EB6780712EAF9000000001 /* P2PConfig.swift */,
+				EB6780732EAF9000000001 /* P2PInboxService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -224,6 +232,7 @@
 			children = (
 				EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */,
 				EB6750082EAF4000000000 /* ControlsView.swift */,
+				EB6780812EAFA000000001 /* P2PMessageLogView.swift */,
 				EB6750192EAF4002000000 /* KeyboardEditView.swift */,
 				EB6750212EAF4003000000 /* DoneButton.swift */,
 				EB6750232EAF4004000000 /* HistoryView.swift */,
@@ -348,6 +357,9 @@
 				EB6760402EAF6000000001 /* SettingsView.swift in Sources */,
 				EB6760422EAF6000000001 /* PurchasesView.swift in Sources */,
 				EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */,
+				EB6780702EAF9000000001 /* P2PConfig.swift in Sources */,
+				EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */,
+				EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -491,6 +503,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Closed Captioner uses the local network to receive nearby caption messages when the radio is on. Nothing is sent over the internet.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Closed Captioner can use Bluetooth to receive nearby caption messages when Wi-Fi is unavailable.";
 				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This identifier will be used to deliver personalized ads to you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -528,6 +542,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Closed Captioner";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to your microphone to convert speech to text for closed captioning.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app needs access to speech recognition to convert your speech to text for closed captioning.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Closed Captioner uses the local network to receive nearby caption messages when the radio is on. Nothing is sent over the internet.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Closed Captioner can use Bluetooth to receive nearby caption messages when Wi-Fi is unavailable.";
 				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This identifier will be used to deliver personalized ads to you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

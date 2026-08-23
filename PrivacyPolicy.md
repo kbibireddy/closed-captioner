@@ -2,7 +2,7 @@
 
 **Effective Date:** October 31, 2025
 
-**Last Updated:** July 31, 2026
+**Last Updated:** August 23, 2026
 
 ## 1. Introduction
 
@@ -55,18 +55,25 @@ Optional **Remove Ads** is processed by **Apple StoreKit**. We do not receive yo
 ### 2.6 Usage Preferences (On-Device Only)
 App settings and preferences stay on your device. We do **not** operate a separate analytics SDK beyond what AdMob provides for ad delivery and measurement.
 
+### 2.7 Nearby Messages (Optional, On-Device / Local Network)
+If you turn **on** the radio control, the App may receive short text messages from other Closed Captioner peers (or a local test tool) over **Bluetooth or the local network** using Apple Multipeer Connectivity. This is **off by default**.
+- Messages stay on the receiving device for display. We do **not** send them to our servers or to AdMob.
+- This does **not** use cellular data as a transport. If nobody nearby is emitting, nothing is received.
+- You can turn the radio off at any time. iOS Local Network (and Bluetooth) permission may be requested the first time you enable it.
+
 ## 3. How We Collect Information
 
 - **Directly from you:** Speech-to-text, text editing, history, purchases
 - **Automatically via permissions:** Microphone, Speech Recognition, and (for personalized ads) App Tracking Transparency
 - **Through third parties:** Apple (Speech Recognition, StoreKit) and Google AdMob (advertising)
 - **On device:** Motion sensors for shake detection; local caption/history storage
+- **Nearby (optional):** Local network or Bluetooth when you enable the radio, to receive caption messages from nearby Closed Captioner peers
 
 You can revoke microphone, speech, and tracking permissions in iOS Settings at any time.
 
 ## 4. How We Use Your Information
 
-- **App Functionality:** Speech-to-text, captions, history, export, shake features
+- **App Functionality:** Speech-to-text, captions, history, export, shake features, and optional nearby message receive when the radio is on
 - **Advertising:** Deliver, personalize (if allowed), and measure ads via Google AdMob unless Remove Ads is purchased
 - **Tracking (as defined by Apple):** Device advertising identifiers and related advertising data may be used to track you across apps and websites owned by other companies **only if** you allow tracking via App Tracking Transparency
 
@@ -85,6 +92,7 @@ You can revoke microphone, speech, and tracking permissions in iOS Settings at a
 - **Apple Speech Recognition:** Audio for transcription (Apple's privacy policy applies)
 - **Google AdMob:** Device ID, advertising-related data, and other information Google requires to serve and measure ads (Google's privacy policy applies)
 - **Apple StoreKit:** Purchase processing (Apple's privacy policy applies)
+- **Nearby messages (optional):** If you enable the radio, short text may travel over Bluetooth or the local network to or from nearby Closed Captioner peers. This does not go to our servers.
 
 ### 5.3 Security
 We follow iOS security practices for local storage. No method of storage or transmission is 100% secure.
@@ -265,7 +273,7 @@ By downloading, installing, or using Closed Captioner, you acknowledge that you 
 
 ---
 
-**Last Updated:** July 31, 2026
+**Last Updated:** August 23, 2026
 
 **Version:** 1.2
 
