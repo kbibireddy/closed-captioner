@@ -8,6 +8,8 @@ This file is the entry point for AI coding agents working in this repository. Re
 
 **ClosedCaptioner** is a native iOS app (SwiftUI) for real-time speech-to-text closed captioning. The Xcode project lives at `ClosedCaptioner.xcodeproj`; source is under `ClosedCaptioner/`.
 
+For a full project map (features, architecture, open issues, roadmap), read [`docs/STEERING.md`](docs/STEERING.md).
+
 ---
 
 ## Which file to read
@@ -15,7 +17,8 @@ This file is the entry point for AI coding agents working in this repository. Re
 | Task | Read this |
 |------|-----------|
 | **Any work in this repo** | This file (`AGENTS.md`) |
-| **Project overview, features, architecture** | [`README.md`](README.md) |
+| **Project overview — features, architecture, bugs, roadmap** | [`docs/STEERING.md`](docs/STEERING.md) |
+| **Project overview (legacy; may lag)** | [`README.md`](README.md) |
 | **Build or deploy to a physical iPhone** | [`docs/agent/device-deploy.md`](docs/agent/device-deploy.md) |
 | **Xcode Cloud / App Store CI** | [`docs/agent/xcode-cloud.md`](docs/agent/xcode-cloud.md) |
 | **In-app purchase / Remove Ads / Retry** | [`docs/agent/iap.md`](docs/agent/iap.md) |

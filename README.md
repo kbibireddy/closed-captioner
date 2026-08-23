@@ -1,6 +1,8 @@
 # ClosedCaptioner
 
-A beautiful iOS app for real-time speech-to-text with closed captioning capabilities.
+A native iOS app for real-time speech-to-text closed captioning.
+
+**→ Current features, architecture, known issues, and roadmap:** [`docs/STEERING.md`](docs/STEERING.md)
 
 ## Features
 
