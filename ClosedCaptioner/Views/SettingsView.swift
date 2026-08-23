@@ -160,97 +160,219 @@ struct KPISettingsView: View {
     @ObservedObject var appState: AppStateViewModel
     @ObservedObject var p2pInbox: P2PInboxService
     @ObservedObject private var performance = AppPerformanceMonitor.shared
-    @State private var showResetConfirmation = false
+
+    private let cardColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button {
-                    showResetConfirmation = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(AppType.display(11, weight: .bold))
-                        Text("Reset")
-                            .font(AppType.display(12, weight: .bold))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Performance")
+                        .font(AppType.display(22))
+                        .tracking(-0.6)
+                        .foregroundColor(appState.colors.text)
+
+                    LazyVGrid(columns: cardColumns, spacing: 10) {
+                        KPIMetricCard(
+                            title: "CPU",
+                            valueText: performance.formattedCPU,
+                            samples: performance.cpuHistory,
+                            colors: appState.colors,
+                            yScale: .zeroToAtLeast(100),
+                            formatY: { String(format: "%.0f%%", $0) }
+                        )
+                        KPIMetricCard(
+                            title: "Memory",
+                            valueText: performance.formattedMemory,
+                            samples: performance.memoryHistory,
+                            colors: appState.colors,
+                            yScale: .padded,
+                            formatY: { AppPerformanceMonitor.formatBytes($0) }
+                        )
+                        KPIMetricCard(
+                            title: "Threads",
+                            valueText: performance.formattedThreads,
+                            samples: performance.threadHistory,
+                            colors: appState.colors,
+                            yScale: .zeroToAtLeast(8),
+                            formatY: { String(format: "%.0f", $0) }
+                        )
+                        KPIMetricCard(
+                            title: "Battery",
+                            valueText: performance.formattedBattery,
+                            samples: performance.batteryHistory,
+                            colors: appState.colors,
+                            yScale: .zeroToHundred,
+                            formatY: { String(format: "%.0f%%", $0) }
+                        )
+                        KPIMetricCard(
+                            title: "Disk free",
+                            valueText: performance.formattedDisk,
+                            samples: performance.diskHistory,
+                            colors: appState.colors,
+                            yScale: .padded,
+                            formatY: { AppPerformanceMonitor.formatBytes($0) }
+                        )
                     }
-                    .foregroundColor(appState.colors.danger)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(appState.colors.card)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(appState.colors.danger.opacity(0.7), lineWidth: 1)
-                    )
                 }
-                .accessibilityLabel("Reset all KPIs")
 
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
+                kpiTable {
+                    kpiRow("Thermal", performance.formattedThermal)
+                    kpiRow("Low Power", performance.isLowPowerMode ? "On" : "Off")
+                    kpiRow("Memory warnings", "\(performance.memoryWarningCount)")
+                    kpiRow("App uptime", performance.formattedUptime)
+                }
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    kpiSection("Performance") {
-                        kpiRow("CPU", performance.formattedCPU)
-                        kpiRow("Peak CPU", performance.formattedPeakCPU)
-                        kpiRow("Memory", performance.formattedMemory)
-                        kpiRow("Peak memory", performance.formattedPeakMemory)
-                        kpiRow("Threads", "\(performance.threadCount)")
-                        kpiRow("Thermal", performance.formattedThermal)
-                        kpiRow("Battery", performance.formattedBattery)
-                        kpiRow("Low Power", performance.isLowPowerMode ? "On" : "Off")
-                        kpiRow("Disk free", performance.formattedDisk)
-                        kpiRow("Memory warnings", "\(performance.memoryWarningCount)")
-                        kpiRow("App uptime", performance.formattedUptime)
+                kpiSection("Radio", table: {
+                    kpiRow("Status", p2pInbox.isListening ? "On" : "Off")
+                    kpiRow("Relay", (p2pInbox.isListening && appState.relayMessages) ? "On" : "Off")
+                }, cards: {
+                    KPIMetricCard(
+                        title: "Peers",
+                        valueText: "\(p2pInbox.connectedPeerCount)",
+                        samples: p2pInbox.peerHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                    KPIMetricCard(
+                        title: "Connects",
+                        valueText: "\(p2pInbox.connectCount)",
+                        samples: p2pInbox.connectHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                    KPIMetricCard(
+                        title: "Disconnects",
+                        valueText: "\(p2pInbox.disconnectCount)",
+                        samples: p2pInbox.disconnectHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                    KPIMetricCard(
+                        title: "Invite timeouts",
+                        valueText: "\(p2pInbox.inviteTimeouts)",
+                        samples: p2pInbox.inviteTimeoutHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                })
+
+                kpiCardSection("Traffic", cards: {
+                    KPIMetricCard(
+                        title: "Messages sent",
+                        valueText: "\(p2pInbox.messagesSent)",
+                        samples: p2pInbox.messagesSentHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                    KPIMetricCard(
+                        title: "Messages received",
+                        valueText: "\(p2pInbox.messagesReceived)",
+                        samples: p2pInbox.messagesReceivedHistory,
+                        colors: appState.colors,
+                        yScale: .zeroToAtLeast(1),
+                        formatY: formatCount
+                    )
+                    KPIMetricCard(
+                        title: "Bytes sent",
+                        valueText: compactBytes(p2pInbox.bytesSent),
+                        samples: p2pInbox.bytesSentHistory,
+                        colors: appState.colors,
+                        yScale: .padded,
+                        formatY: { compactBytes(Int($0.rounded())) }
+                    )
+                    KPIMetricCard(
+                        title: "Bytes received",
+                        valueText: compactBytes(p2pInbox.bytesReceived),
+                        samples: p2pInbox.bytesReceivedHistory,
+                        colors: appState.colors,
+                        yScale: .padded,
+                        formatY: { compactBytes(Int($0.rounded())) }
+                    )
+                })
+
+                kpiSection("Relay") {
+                    kpiRow("Forwarded", "\(p2pInbox.messagesForwarded)")
+                    kpiRow("Duplicates dropped", "\(p2pInbox.duplicatesDropped)")
+                    kpiRow("TTL dropped", "\(p2pInbox.ttlDropped)")
+                    kpiRow("Last hop", "\(p2pInbox.lastHop)")
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Message Log")
+                        .font(AppType.display(22))
+                        .tracking(-0.6)
+                        .foregroundColor(appState.colors.text)
+
+                    Button {
+                        p2pInbox.clearLog()
+                    } label: {
+                        Text("Clear log")
+                            .font(AppType.display(13, weight: .bold))
+                            .foregroundColor(appState.colors.danger)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(appState.colors.card)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(appState.colors.danger.opacity(0.55), lineWidth: 1)
+                            )
                     }
+                    .disabled(p2pInbox.messages.isEmpty)
+                    .opacity(p2pInbox.messages.isEmpty ? 0.45 : 1)
+                    .accessibilityLabel("Clear message log")
 
-                    kpiSection("Radio") {
-                        kpiRow("Status", p2pInbox.isListening ? "On" : "Off")
-                        kpiRow("Relay", appState.relayMessages ? "On" : "Off")
-                        kpiRow("Peers", "\(p2pInbox.connectedPeerCount)")
-                        kpiRow("Peak peers", "\(p2pInbox.peakPeerCount)")
-                        kpiRow("Connects", "\(p2pInbox.connectCount)")
-                        kpiRow("Disconnects", "\(p2pInbox.disconnectCount)")
-                        kpiRow("Invite timeouts", "\(p2pInbox.inviteTimeouts)")
-                    }
-
-                    kpiSection("Traffic") {
-                        kpiRow("Messages sent", "\(p2pInbox.messagesSent)")
-                        kpiRow("Messages received", "\(p2pInbox.messagesReceived)")
-                        kpiRow("Bytes sent", compactBytes(p2pInbox.bytesSent))
-                        kpiRow("Bytes received", compactBytes(p2pInbox.bytesReceived))
-                    }
-
-                    kpiSection("Relay") {
-                        kpiRow("Forwarded", "\(p2pInbox.messagesForwarded)")
-                        kpiRow("Duplicates dropped", "\(p2pInbox.duplicatesDropped)")
-                        kpiRow("TTL dropped", "\(p2pInbox.ttlDropped)")
-                        kpiRow("Last hop", "\(p2pInbox.lastHop)")
-                    }
-
-                    kpiSection("Log") {
+                    kpiTable {
                         kpiRow("Buffer", "\(p2pInbox.messages.count)/\(P2PConfig.maxLogCount)")
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .background(appState.colors.background)
-        .alert("Reset KPIs?", isPresented: $showResetConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
-                p2pInbox.resetKPIs()
-                performance.resetPeaks()
-            }
-        } message: {
-            Text("This zeros radio counters and performance peaks. The message log is not cleared.")
-        }
         .onAppear { performance.start() }
         .onDisappear { performance.stop() }
+    }
+
+    private func kpiSection<Table: View, Cards: View>(
+        _ title: String,
+        @ViewBuilder table: () -> Table,
+        @ViewBuilder cards: () -> Cards
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(AppType.display(22))
+                .tracking(-0.6)
+                .foregroundColor(appState.colors.text)
+            LazyVGrid(columns: cardColumns, spacing: 10) {
+                cards()
+            }
+            kpiTable(content: table)
+        }
+    }
+
+    private func kpiCardSection<Cards: View>(
+        _ title: String,
+        @ViewBuilder cards: () -> Cards
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(AppType.display(22))
+                .tracking(-0.6)
+                .foregroundColor(appState.colors.text)
+            LazyVGrid(columns: cardColumns, spacing: 10) {
+                cards()
+            }
+        }
     }
 
     private func kpiSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -259,16 +381,24 @@ struct KPISettingsView: View {
                 .font(AppType.display(22))
                 .tracking(-0.6)
                 .foregroundColor(appState.colors.text)
-            VStack(spacing: 0) {
-                content()
-            }
-            .background(appState.colors.card)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                    .stroke(appState.colors.line, lineWidth: 1)
-            )
+            kpiTable(content: content)
         }
+    }
+
+    private var formatCount: (Double) -> String {
+        { String(format: "%.0f", $0) }
+    }
+
+    private func kpiTable<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(appState.colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(appState.colors.line, lineWidth: 1)
+        )
     }
 
     private func kpiRow(_ label: String, _ value: String) -> some View {

@@ -32,7 +32,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("This name is shown on nearby messages you send. It starts as this device’s host name.")
+            Text("This name is shown on radio messages you send. It starts as this device’s host name.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -68,12 +68,12 @@ struct GeneralSettingsView: View {
 
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Nearby")
+            Text("Radio")
                 .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("When radio is on, this phone passes captions to the next person nearby so they can travel farther. Delivery isn’t guaranteed.")
+            Text("When radio is on, this phone passes captions to the next person so they can travel farther. Delivery isn’t guaranteed.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -90,10 +90,10 @@ struct GeneralSettingsView: View {
             }
             .tint(appState.colors.accent)
             .accessibilityLabel("Relay messages")
-            .accessibilityHint("Forwards nearby captions so they can reach people farther away. Radio must also be on.")
+            .accessibilityHint("Forwards radio captions so they can reach people farther away. Radio must also be on.")
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Keep radio nearby")
+                Text("Keep radio on")
                     .font(AppType.display(15, weight: .semibold))
                     .foregroundColor(appState.colors.text)
                 Text("Stays on if you switch apps or lock the phone. Stops when you turn radio off, close the app, or this timer ends. iOS may still pause it to save battery.")

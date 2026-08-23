@@ -46,7 +46,7 @@ enum RadioKeepAlive: String, CaseIterable, Identifiable {
         case .oneHour: return "It turns off automatically in 1 hour."
         case .fourHours: return "It turns off automatically in 4 hours."
         case .eightHours: return "It turns off automatically in 8 hours."
-        case .untilOff: return "It stays on until you turn Nearby off or close the app."
+        case .untilOff: return "It stays on until you turn Radio off or close the app."
         }
     }
 }
@@ -64,6 +64,10 @@ enum P2PConfig {
     static let defaultTTL = 4
     static let maxNeighbors = 6
     static let inviteTimeoutSeconds: TimeInterval = 12
+    /// Rolling window for HUD ↑/↓ rates (sum of bytes in the last N seconds → B/min).
+    static let trafficRateWindowSeconds: TimeInterval = 60
+    /// How often published rates refresh so a quiet window decays toward zero.
+    static let trafficRateRefreshSeconds: TimeInterval = 2
     /// iOS↔macOS Multipeer ICE often fails with `.required` and no identity.
     static let encryptionPreference: MCEncryptionPreference = .optional
     static let inviteRetryLimit = 4

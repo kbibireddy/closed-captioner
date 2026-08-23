@@ -38,6 +38,12 @@ Incoming traffic on the Mac prints as:
 [Karthiks-iPhone] hello  14:02:11
 ```
 
+If the line was **relayed** (someone else originated it; a neighbor forwarded it here), the neighbor that emitted it to this process is appended:
+
+```
+[Karthiks-iPhone] hello  14:02:11  via Mids-iPhone
+```
+
 Two Mac processes can talk to each other the same way.
 
 Ctrl+C stops.

@@ -43,6 +43,19 @@ final class P2PInboxService: NSObject, ObservableObject {
     @Published private(set) var lastHop = 0
     @Published private(set) var bytesSent = 0
     @Published private(set) var bytesReceived = 0
+    /// Bytes sent in the last rolling minute (HUD rate; not lifetime total).
+    @Published private(set) var bytesSentPerMinute = 0
+    /// Bytes received in the last rolling minute (HUD rate; not lifetime total).
+    @Published private(set) var bytesReceivedPerMinute = 0
+
+    @Published private(set) var peerHistory: [KPIMetricSample] = []
+    @Published private(set) var connectHistory: [KPIMetricSample] = []
+    @Published private(set) var disconnectHistory: [KPIMetricSample] = []
+    @Published private(set) var inviteTimeoutHistory: [KPIMetricSample] = []
+    @Published private(set) var messagesSentHistory: [KPIMetricSample] = []
+    @Published private(set) var messagesReceivedHistory: [KPIMetricSample] = []
+    @Published private(set) var bytesSentHistory: [KPIMetricSample] = []
+    @Published private(set) var bytesReceivedHistory: [KPIMetricSample] = []
 
     private let instanceID = UUID().uuidString
     private let peerID: MCPeerID
@@ -55,6 +68,10 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var knownConnected = Set<MCPeerID>()
     private var listeningStartedAt: Date?
     private var autoStopTimer: Timer?
+    private var trafficSamples: [(at: Date, sent: Int, received: Int)] = []
+    private var trafficRateTimer: Timer?
+    private var kpiHistoryTimer: Timer?
+    private var lastKPIHistoryAt: Date?
     #if os(iOS)
     private var backgroundTask = UIBackgroundTaskIdentifier.invalid
     #endif
@@ -69,10 +86,16 @@ final class P2PInboxService: NSObject, ObservableObject {
         let display = rawName.isEmpty ? "ClosedCaptioner" : String(rawName.prefix(P2PConfig.maxDisplayNameLength))
         self.peerID = MCPeerID(displayName: display)
         super.init()
+        startKPIHistory()
     }
 
     deinit {
+        kpiHistoryTimer?.invalidate()
         stopListening()
+    }
+
+    func clearLog() {
+        messages.removeAll()
     }
 
     func toggleListening() {
@@ -216,7 +239,7 @@ final class P2PInboxService: NSObject, ObservableObject {
 
         rememberSeen(messageID)
         messagesSent += 1
-        bytesSent += data.count
+        recordTraffic(sent: data.count, received: 0)
         appendMessage(senderName: sender, text: trimmed)
         lastHop = 0
         AppLog.debug("[P2P] Broadcast \(trimmed.count) chars as \(sender) to \(peers.count) peer(s)")
@@ -257,12 +280,14 @@ final class P2PInboxService: NSObject, ObservableObject {
         inviteAttempts.removeAll()
         isListening = true
         refreshPeerCount()
+        startTrafficRateTimer()
         browser.startBrowsingForPeers()
         advertiser.startAdvertisingPeer()
         AppLog.debug("[P2P] Radio on - browsing + advertising \(P2PConfig.serviceType)")
     }
 
     private func tearDownSession() {
+        stopTrafficRateTimer()
         browser?.stopBrowsingForPeers()
         browser?.delegate = nil
         browser = nil
@@ -276,6 +301,9 @@ final class P2PInboxService: NSObject, ObservableObject {
         inviteAttempts.removeAll()
         knownConnected.removeAll()
         connectedPeerCount = 0
+        trafficSamples.removeAll()
+        bytesSentPerMinute = 0
+        bytesReceivedPerMinute = 0
     }
 
     private func resetStats() {
@@ -292,6 +320,84 @@ final class P2PInboxService: NSObject, ObservableObject {
         lastHop = 0
         bytesSent = 0
         bytesReceived = 0
+        trafficSamples.removeAll()
+        bytesSentPerMinute = 0
+        bytesReceivedPerMinute = 0
+        peerHistory.removeAll()
+        connectHistory.removeAll()
+        disconnectHistory.removeAll()
+        inviteTimeoutHistory.removeAll()
+        messagesSentHistory.removeAll()
+        messagesReceivedHistory.removeAll()
+        bytesSentHistory.removeAll()
+        bytesReceivedHistory.removeAll()
+        lastKPIHistoryAt = nil
+    }
+
+    private func recordTraffic(sent: Int, received: Int) {
+        if sent > 0 { bytesSent += sent }
+        if received > 0 { bytesReceived += received }
+        guard sent > 0 || received > 0 else { return }
+        trafficSamples.append((Date(), sent, received))
+        refreshTrafficRates()
+    }
+
+    private func startTrafficRateTimer() {
+        stopTrafficRateTimer()
+        trafficRateTimer = Timer.scheduledTimer(
+            withTimeInterval: P2PConfig.trafficRateRefreshSeconds,
+            repeats: true
+        ) { [weak self] _ in
+            self?.refreshTrafficRates()
+        }
+        if let trafficRateTimer {
+            RunLoop.main.add(trafficRateTimer, forMode: .common)
+        }
+        refreshTrafficRates()
+    }
+
+    private func stopTrafficRateTimer() {
+        trafficRateTimer?.invalidate()
+        trafficRateTimer = nil
+    }
+
+    private func refreshTrafficRates() {
+        let cutoff = Date().addingTimeInterval(-P2PConfig.trafficRateWindowSeconds)
+        trafficSamples.removeAll { $0.at < cutoff }
+        bytesSentPerMinute = trafficSamples.reduce(0) { $0 + $1.sent }
+        bytesReceivedPerMinute = trafficSamples.reduce(0) { $0 + $1.received }
+    }
+
+    private func startKPIHistory() {
+        guard kpiHistoryTimer == nil else { return }
+        recordKPIHistory()
+        let timer = Timer(timeInterval: AppPerformanceMonitor.historyInterval, repeats: true) { [weak self] _ in
+            self?.recordKPIHistory()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        kpiHistoryTimer = timer
+    }
+
+    private func recordKPIHistory() {
+        let now = Date()
+        if let lastKPIHistoryAt, now.timeIntervalSince(lastKPIHistoryAt) < AppPerformanceMonitor.historyInterval - 0.5 {
+            return
+        }
+        lastKPIHistoryAt = now
+        appendKPISample(Double(connectedPeerCount), to: &peerHistory, at: now)
+        appendKPISample(Double(connectCount), to: &connectHistory, at: now)
+        appendKPISample(Double(disconnectCount), to: &disconnectHistory, at: now)
+        appendKPISample(Double(inviteTimeouts), to: &inviteTimeoutHistory, at: now)
+        appendKPISample(Double(messagesSent), to: &messagesSentHistory, at: now)
+        appendKPISample(Double(messagesReceived), to: &messagesReceivedHistory, at: now)
+        appendKPISample(Double(bytesSent), to: &bytesSentHistory, at: now)
+        appendKPISample(Double(bytesReceived), to: &bytesReceivedHistory, at: now)
+    }
+
+    private func appendKPISample(_ value: Double, to history: inout [KPIMetricSample], at date: Date) {
+        history.append(KPIMetricSample(date: date, value: value))
+        let cutoff = date.addingTimeInterval(-AppPerformanceMonitor.historyWindow)
+        history.removeAll { $0.date < cutoff }
     }
 
     private func refreshPeerCount() {
@@ -402,7 +508,7 @@ final class P2PInboxService: NSObject, ObservableObject {
     }
 
     private func handleIncoming(_ envelope: P2PConfig.Envelope, data: Data, from neighbor: MCPeerID) {
-        bytesReceived += data.count
+        recordTraffic(sent: 0, received: data.count)
         lastHop = envelope.hop ?? 0
 
         if let messageID = envelope.id, !messageID.isEmpty {
@@ -450,7 +556,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         do {
             try session.send(data, toPeers: targets, with: .reliable)
             messagesForwarded += 1
-            bytesSent += data.count
+            recordTraffic(sent: data.count, received: 0)
         } catch {
             AppLog.debug("[P2P] Forward failed: \(error.localizedDescription)")
         }
@@ -629,8 +735,8 @@ enum NearbyMeshNotice {
 
     private static func addRequest(keepAlive: RadioKeepAlive) {
         let content = UNMutableNotificationContent()
-        content.title = "Nearby is still on"
-        content.body = "This phone is still on the mesh. It can receive and send nearby messages. Turn Nearby off or close the app to leave. \(keepAlive.autoOffPhrase)"
+        content.title = "Radio is still on"
+        content.body = "This phone is still on the radio network. It can receive and send captions. Turn Radio off or close the app to leave. \(keepAlive.autoOffPhrase)"
         content.sound = .default
         content.interruptionLevel = .active
 

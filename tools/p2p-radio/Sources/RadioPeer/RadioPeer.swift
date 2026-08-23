@@ -84,9 +84,17 @@ final class RadioPeer: NSObject {
         }
     }
 
-    private func printIncoming(from sender: String, text: String) {
+    private func printIncoming(origin: String, via neighbor: String, hop: Int?, text: String) {
         let time = Self.timeFormatter.string(from: Date())
-        print("[\(sender)] \(text)  \(time)")
+        let originName = P2PConfig.normalizedName(origin) ?? origin
+        let neighborName = P2PConfig.normalizedName(neighbor) ?? neighbor
+        let relayed = (hop ?? 0) >= 1
+            || originName.compare(neighborName, options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame
+        if relayed {
+            print("[\(originName)] \(text)  \(time)  via \(neighborName)")
+        } else {
+            print("[\(originName)] \(text)  \(time)")
+        }
     }
 
     private func shouldInvite(_ other: MCPeerID, info: [String: String]?) -> Bool {
@@ -189,8 +197,8 @@ extension RadioPeer: MCSessionDelegate {
             print("[p2p-radio] Ignored undecodable payload from \(peerID.displayName)")
             return
         }
-        let sender = envelope.from ?? peerID.displayName
-        printIncoming(from: sender, text: envelope.text)
+        let origin = envelope.from ?? peerID.displayName
+        printIncoming(origin: origin, via: peerID.displayName, hop: envelope.hop, text: envelope.text)
     }
 
     func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}

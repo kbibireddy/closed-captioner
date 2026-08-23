@@ -2,7 +2,7 @@
 //  AppPerformanceMonitor.swift
 //  ClosedCaptioner
 //
-//  Samples process memory, CPU, thermal, and battery while the KPIs tab is open.
+//  Live process samples plus a rolling 1-hour history (one point every 30s).
 //
 
 import Combine
@@ -12,11 +12,11 @@ import UIKit
 
 final class AppPerformanceMonitor: ObservableObject {
     static let shared = AppPerformanceMonitor()
+    static let historyInterval: TimeInterval = 30
+    static let historyWindow: TimeInterval = 60 * 60
 
     @Published private(set) var memoryBytes: UInt64 = 0
-    @Published private(set) var peakMemoryBytes: UInt64 = 0
     @Published private(set) var cpuPercent: Double = 0
-    @Published private(set) var peakCPUPercent: Double = 0
     @Published private(set) var threadCount: Int = 0
     @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     @Published private(set) var batteryPercent: Int?
@@ -25,52 +25,56 @@ final class AppPerformanceMonitor: ObservableObject {
     @Published private(set) var memoryWarningCount = 0
     @Published private(set) var appUptime: TimeInterval = 0
 
-    private var timer: Timer?
+    @Published private(set) var cpuHistory: [KPIMetricSample] = []
+    @Published private(set) var memoryHistory: [KPIMetricSample] = []
+    @Published private(set) var threadHistory: [KPIMetricSample] = []
+    @Published private(set) var batteryHistory: [KPIMetricSample] = []
+    @Published private(set) var diskHistory: [KPIMetricSample] = []
+
+    private var liveTimer: Timer?
+    private var historyTimer: Timer?
+    private var lastHistoryAt: Date?
     private var memoryWarningObserver: NSObjectProtocol?
     private let processStart = Date()
 
     private init() {}
 
     deinit {
-        stop()
+        liveTimer?.invalidate()
+        historyTimer?.invalidate()
     }
 
-    func start() {
-        guard timer == nil else { return }
-        UIDevice.current.isBatteryMonitoringEnabled = true
-        if memoryWarningObserver == nil {
-            memoryWarningObserver = NotificationCenter.default.addObserver(
-                forName: UIApplication.didReceiveMemoryWarningNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                self?.memoryWarningCount += 1
-            }
-        }
-        sample()
-        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
-            self?.sample()
+    /// Rolling 30s history. Safe to call at launch; no-ops if already running.
+    func startHistory() {
+        guard historyTimer == nil else { return }
+        enableMonitoring()
+        sample(recordHistory: true)
+        let timer = Timer(timeInterval: Self.historyInterval, repeats: true) { [weak self] _ in
+            self?.sample(recordHistory: true)
         }
         RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        historyTimer = timer
+    }
+
+    /// 1s live values while the KPIs tab is visible.
+    func start() {
+        startHistory()
+        guard liveTimer == nil else { return }
+        sample(recordHistory: false)
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            self?.sample(recordHistory: false)
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        liveTimer = timer
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
-        UIDevice.current.isBatteryMonitoringEnabled = false
+        liveTimer?.invalidate()
+        liveTimer = nil
     }
 
-    func resetPeaks() {
-        peakMemoryBytes = memoryBytes
-        peakCPUPercent = cpuPercent
-        memoryWarningCount = 0
-    }
-
-    var formattedMemory: String { formatBytes(memoryBytes) }
-    var formattedPeakMemory: String { formatBytes(peakMemoryBytes) }
+    var formattedMemory: String { Self.formatBytes(memoryBytes) }
     var formattedCPU: String { String(format: "%.0f%%", cpuPercent) }
-    var formattedPeakCPU: String { String(format: "%.0f%%", peakCPUPercent) }
     var formattedThermal: String {
         switch thermalState {
         case .nominal: return "Nominal"
@@ -84,17 +88,39 @@ final class AppPerformanceMonitor: ObservableObject {
         guard let batteryPercent else { return "n/a" }
         return "\(batteryPercent)%"
     }
-    var formattedDisk: String { formatBytes(freeDiskBytes) }
+    var formattedDisk: String { Self.formatBytes(freeDiskBytes) }
     var formattedUptime: String { formatUptime(appUptime) }
+    var formattedThreads: String { "\(threadCount)" }
 
-    private func sample() {
-        let memory = currentMemoryFootprint()
-        memoryBytes = memory
-        if memory > peakMemoryBytes { peakMemoryBytes = memory }
+    static func formatBytes(_ bytes: UInt64) -> String {
+        let n = Double(bytes)
+        if n < 1000 { return "\(bytes)B" }
+        if n < 1_000_000 { return String(format: "%.1f kB", n / 1000) }
+        if n < 1_000_000_000 { return String(format: "%.1f MB", n / 1_000_000) }
+        return String(format: "%.2f GB", n / 1_000_000_000)
+    }
 
+    static func formatBytes(_ bytes: Double) -> String {
+        formatBytes(UInt64(max(0, bytes.rounded())))
+    }
+
+    private func enableMonitoring() {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        if memoryWarningObserver == nil {
+            memoryWarningObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.didReceiveMemoryWarningNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.memoryWarningCount += 1
+            }
+        }
+    }
+
+    private func sample(recordHistory: Bool) {
+        memoryBytes = currentMemoryFootprint()
         let (cpu, threads) = currentCPUAndThreadCount()
         cpuPercent = cpu
-        if cpu > peakCPUPercent { peakCPUPercent = cpu }
         threadCount = threads
         thermalState = ProcessInfo.processInfo.thermalState
         isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
@@ -102,6 +128,37 @@ final class AppPerformanceMonitor: ObservableObject {
         batteryPercent = level >= 0 ? Int((level * 100).rounded()) : nil
         freeDiskBytes = currentFreeDisk()
         appUptime = Date().timeIntervalSince(processStart)
+
+        if recordHistory {
+            appendHistory()
+        } else if lastHistoryAt == nil {
+            appendHistory()
+        }
+    }
+
+    private func appendHistory() {
+        let now = Date()
+        if let lastHistoryAt, now.timeIntervalSince(lastHistoryAt) < Self.historyInterval - 0.5 {
+            return
+        }
+        lastHistoryAt = now
+        cpuHistory.append(KPIMetricSample(date: now, value: cpuPercent))
+        memoryHistory.append(KPIMetricSample(date: now, value: Double(memoryBytes)))
+        threadHistory.append(KPIMetricSample(date: now, value: Double(threadCount)))
+        diskHistory.append(KPIMetricSample(date: now, value: Double(freeDiskBytes)))
+        if let batteryPercent {
+            batteryHistory.append(KPIMetricSample(date: now, value: Double(batteryPercent)))
+        }
+        trimHistory(now: now)
+    }
+
+    private func trimHistory(now: Date) {
+        let cutoff = now.addingTimeInterval(-Self.historyWindow)
+        cpuHistory.removeAll { $0.date < cutoff }
+        memoryHistory.removeAll { $0.date < cutoff }
+        threadHistory.removeAll { $0.date < cutoff }
+        batteryHistory.removeAll { $0.date < cutoff }
+        diskHistory.removeAll { $0.date < cutoff }
     }
 
     private func currentMemoryFootprint() -> UInt64 {
@@ -155,14 +212,6 @@ final class AppPerformanceMonitor: ObservableObject {
             return UInt64(important)
         }
         return 0
-    }
-
-    private func formatBytes(_ bytes: UInt64) -> String {
-        let n = Double(bytes)
-        if n < 1000 { return "\(bytes)B" }
-        if n < 1_000_000 { return String(format: "%.1f kB", n / 1000) }
-        if n < 1_000_000_000 { return String(format: "%.1f MB", n / 1_000_000) }
-        return String(format: "%.2f GB", n / 1_000_000_000)
     }
 
     private func formatUptime(_ interval: TimeInterval) -> String {

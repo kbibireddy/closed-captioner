@@ -46,6 +46,7 @@
 		EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780732EAF9000000001 /* P2PInboxService.swift */; };
 		EB6780902EAFB100000001 /* AppPerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780912EAFB100000001 /* AppPerformanceMonitor.swift */; };
 		EB6780A02EAFC000000001 /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780A12EAFC000000001 /* AppLog.swift */; };
+		EB6780B02EAFD000000001 /* KPIMetricCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780B12EAFD000000001 /* KPIMetricCard.swift */; };
 		EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780812EAFA000000001 /* P2PMessageLogView.swift */; };
 /* End PBXBuildFile section */
 
@@ -90,6 +91,7 @@
 		EB6780732EAF9000000001 /* P2PInboxService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PInboxService.swift; sourceTree = "<group>"; };
 		EB6780912EAFB100000001 /* AppPerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPerformanceMonitor.swift; sourceTree = "<group>"; };
 		EB6780A12EAFC000000001 /* AppLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLog.swift; sourceTree = "<group>"; };
+		EB6780B12EAFD000000001 /* KPIMetricCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KPIMetricCard.swift; sourceTree = "<group>"; };
 		EB6780812EAFA000000001 /* P2PMessageLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PMessageLogView.swift; sourceTree = "<group>"; };
 		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -243,6 +245,7 @@
 				EB6750212EAF4003000000 /* DoneButton.swift */,
 				EB6750232EAF4004000000 /* HistoryView.swift */,
 				EB6760412EAF6000000001 /* SettingsView.swift */,
+				EB6780B12EAFD000000001 /* KPIMetricCard.swift */,
 				EB6760432EAF6000000001 /* PurchasesView.swift */,
 				EB6770612EAF8000000001 /* GeneralSettingsView.swift */,
 				EB6760082EAF5000000001 /* PremiumSheetView.swift */,
@@ -367,6 +370,7 @@
 				EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */,
 				EB6780902EAFB100000001 /* AppPerformanceMonitor.swift in Sources */,
 				EB6780A02EAFC000000001 /* AppLog.swift in Sources */,
+				EB6780B02EAFD000000001 /* KPIMetricCard.swift in Sources */,
 				EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -7,7 +7,8 @@ radio.start()
 
 print("Turn the radio ON in Closed Captioner (top right) to connect.")
 print("This process sends nothing until you type a line and press Enter.")
-print("Incoming messages print as [name] text  HH:mm:ss")
+print("Incoming: [name] text  HH:mm:ss")
+print("Relayed:  [origin] text  HH:mm:ss  via <neighbor who sent it here>")
 print("Ctrl+C to stop.")
 
 DispatchQueue.global(qos: .userInitiated).async {
