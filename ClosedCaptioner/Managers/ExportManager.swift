@@ -72,8 +72,7 @@ class ExportManager {
         
         try renderer.writePDF(to: fileURL) { context in
             context.beginPage()
-            let serifDescriptor = UIFont.systemFont(ofSize: 16).fontDescriptor.withDesign(.serif)
-            let textFont = serifDescriptor.map { UIFont(descriptor: $0, size: 16) } ?? UIFont.systemFont(ofSize: 16)
+            let textFont = AppType.fontChoice.uiFont(size: 16, weight: .medium)
             let textAttributes: [NSAttributedString.Key: Any] = [
                 .font: textFont
             ]
@@ -103,7 +102,7 @@ class ExportManager {
             <meta charset="UTF-8">
             <title>Captions</title>
             <style>
-                body { font-family: "New York", "Times New Roman", serif; padding: 20px; }
+                body { font-family: \(AppType.fontChoice.htmlFontFamily); padding: 20px; }
                 .timestamp { color: #888; font-size: 12px; }
             </style>
         </head>

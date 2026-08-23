@@ -2,17 +2,153 @@
 //  Theme.swift
 //  ClosedCaptioner
 //
-//  Visual language: New York serif for all type, and selectable palettes.
+//  Visual language: selectable type + palettes.
 //  Day / Night control light vs dark; AppTheme tints them.
 //  Stealth is a low-contrast theme, not a third lighting mode.
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
+
+/// App-wide typeface. Default is SF Pro (system).
+/// Extra options are clean faces common in product / editorial UI (built into iOS).
+enum AppFontChoice: String, CaseIterable, Identifiable {
+    case system
+    case newYork
+    case avenirNext
+    case futura
+    case rounded
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: return "System"
+        case .newYork: return "New York"
+        case .avenirNext: return "Avenir Next"
+        case .futura: return "Futura"
+        case .rounded: return "Rounded"
+        }
+    }
+
+    func font(size: CGFloat, weight: Font.Weight = .medium) -> Font {
+        switch self {
+        case .system:
+            return .system(size: size, weight: weight, design: .default)
+        case .newYork:
+            return .system(size: size, weight: weight, design: .serif)
+        case .rounded:
+            return .system(size: size, weight: weight, design: .rounded)
+        case .avenirNext, .futura:
+            #if os(iOS)
+            return Font(uiFont(size: size, weight: weight))
+            #else
+            return .system(size: size, weight: weight, design: .default)
+            #endif
+        }
+    }
+
+    /// CSS stack for HTML exports.
+    var htmlFontFamily: String {
+        switch self {
+        case .system, .rounded:
+            return #"-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif"#
+        case .newYork:
+            return #""New York", "Times New Roman", serif"#
+        case .avenirNext:
+            return #""Avenir Next", Avenir, "Helvetica Neue", Helvetica, sans-serif"#
+        case .futura:
+            return #"Futura, "Trebuchet MS", Arial, sans-serif"#
+        }
+    }
+
+    #if os(iOS)
+    /// UIKit font for PDF / attributed strings / named faces.
+    func uiFont(size: CGFloat, weight: Font.Weight = .medium) -> UIFont {
+        switch self {
+        case .system:
+            return UIFont.systemFont(ofSize: size, weight: Self.uiWeight(weight))
+        case .newYork:
+            let descriptor = UIFont.systemFont(ofSize: size, weight: Self.uiWeight(weight))
+                .fontDescriptor
+                .withDesign(.serif)
+            if let descriptor {
+                return UIFont(descriptor: descriptor, size: size)
+            }
+            return UIFont.systemFont(ofSize: size, weight: Self.uiWeight(weight))
+        case .rounded:
+            let descriptor = UIFont.systemFont(ofSize: size, weight: Self.uiWeight(weight))
+                .fontDescriptor
+                .withDesign(.rounded)
+            if let descriptor {
+                return UIFont(descriptor: descriptor, size: size)
+            }
+            return UIFont.systemFont(ofSize: size, weight: Self.uiWeight(weight))
+        case .avenirNext:
+            return Self.namedFont(Self.avenirNextName(for: weight), size: size, weight: weight)
+        case .futura:
+            return Self.namedFont(Self.futuraName(for: weight), size: size, weight: weight)
+        }
+    }
+
+    private static func namedFont(_ name: String, size: CGFloat, weight: Font.Weight) -> UIFont {
+        if let custom = UIFont(name: name, size: size) {
+            return custom
+        }
+        return UIFont.systemFont(ofSize: size, weight: uiWeight(weight))
+    }
+
+    private static func avenirNextName(for weight: Font.Weight) -> String {
+        switch weight {
+        case .ultraLight, .thin, .light: return "AvenirNext-UltraLight"
+        case .regular: return "AvenirNext-Regular"
+        case .medium: return "AvenirNext-Medium"
+        case .semibold: return "AvenirNext-DemiBold"
+        case .bold: return "AvenirNext-Bold"
+        case .heavy, .black: return "AvenirNext-Heavy"
+        default: return "AvenirNext-Medium"
+        }
+    }
+
+    private static func futuraName(for weight: Font.Weight) -> String {
+        switch weight {
+        case .ultraLight, .thin, .light, .regular, .medium:
+            return "Futura-Medium"
+        case .semibold, .bold:
+            return "Futura-Bold"
+        case .heavy, .black:
+            return "Futura-CondensedExtraBold"
+        default:
+            return "Futura-Medium"
+        }
+    }
+
+    private static func uiWeight(_ weight: Font.Weight) -> UIFont.Weight {
+        switch weight {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        default: return .medium
+        }
+    }
+    #endif
+}
 
 enum AppType {
-    /// New York serif — used for all in-app type.
+    /// Active choice; kept in sync by `AppStateViewModel`.
+    static var fontChoice: AppFontChoice = .system
+
+    /// Resolves using the user’s Fonts preference.
     static func display(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
-        .system(size: size, weight: weight, design: .serif)
+        fontChoice.font(size: size, weight: weight)
     }
 }
 

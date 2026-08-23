@@ -15,6 +15,7 @@ struct GeneralSettingsView: View {
                 nearbySection
                 appearanceSection
                 themeSection
+                fontSection
             }
             .padding(20)
         }
@@ -72,7 +73,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("When radio is on, this phone can pass a caption to the next person nearby. Delivery isn’t guaranteed.")
+            Text("When radio is on, this phone passes captions to the next person nearby so they can travel farther. Delivery isn’t guaranteed.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -82,7 +83,7 @@ struct GeneralSettingsView: View {
                     Text("Relay messages")
                         .font(AppType.display(15, weight: .semibold))
                         .foregroundColor(appState.colors.text)
-                    Text("Off by default. Uses extra Bluetooth or Wi‑Fi only while radio is on.")
+                    Text("On by default. Uses extra Bluetooth or Wi‑Fi only while radio is on.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                 }
@@ -198,7 +199,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("Grove is the default. Stealth keeps captions hard to read from a distance.")
+            Text("Stealth keeps captions hard to read from a distance.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -218,6 +219,51 @@ struct GeneralSettingsView: View {
         }
     }
 
+    private var fontSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Fonts")
+                .font(AppType.display(22))
+                .tracking(-0.8)
+                .foregroundColor(appState.colors.text)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 108), spacing: 8)],
+                spacing: 8
+            ) {
+                ForEach(AppFontChoice.allCases) { font in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            appState.fontChoice = font
+                        }
+                    } label: {
+                        fontChip(font)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(font.title)
+                    .accessibilityAddTraits(appState.fontChoice == font ? .isSelected : [])
+                }
+            }
+        }
+    }
+
+    private func fontChip(_ font: AppFontChoice) -> some View {
+        let selected = appState.fontChoice == font
+        return Text(font.title)
+            .font(font.font(size: 14, weight: .semibold))
+            .foregroundColor(appState.colors.text)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
+            .background(appState.colors.card)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                    .stroke(selected ? appState.colors.accent : appState.colors.line, lineWidth: selected ? 2 : 1)
+            )
+    }
+
     private func themeRow(_ theme: AppTheme) -> some View {
         let selected = appState.theme == theme
         return HStack(spacing: 14) {
@@ -231,20 +277,9 @@ struct GeneralSettingsView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 8) {
-                    Text(theme.title)
-                        .font(AppType.display(15, weight: .bold))
-                        .foregroundColor(appState.colors.text)
-                    if theme == .grove {
-                        Text("Default")
-                            .font(AppType.display(11, weight: .bold))
-                            .foregroundColor(appState.colors.onAccent)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(appState.colors.accent)
-                            .clipShape(Capsule())
-                    }
-                }
+                Text(theme.title)
+                    .font(AppType.display(15, weight: .bold))
+                    .foregroundColor(appState.colors.text)
                 Text(theme.subtitle)
                     .font(AppType.display(13, weight: .medium))
                     .foregroundColor(appState.colors.muted)

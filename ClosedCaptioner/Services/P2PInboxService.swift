@@ -199,7 +199,7 @@ final class P2PInboxService: NSObject, ObservableObject {
 
         let peers = session.connectedPeers
         guard !peers.isEmpty else {
-            AppLog.debug("[P2P] Broadcast skipped — no connected peers")
+            AppLog.debug("[P2P] Broadcast skipped - no connected peers")
             return false
         }
 
@@ -259,7 +259,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         refreshPeerCount()
         browser.startBrowsingForPeers()
         advertiser.startAdvertisingPeer()
-        AppLog.debug("[P2P] Radio on — browsing + advertising \(P2PConfig.serviceType)")
+        AppLog.debug("[P2P] Radio on - browsing + advertising \(P2PConfig.serviceType)")
     }
 
     private func tearDownSession() {
@@ -635,7 +635,7 @@ enum NearbyMeshNotice {
         content.interruptionLevel = .active
 
         // Immediate (`trigger: nil`) is dropped if iOS still considers us on screen.
-        // Register a 1s timer with the system now — do not wait on permission APIs.
+        // Register a 1s timer with the system now - do not wait on permission APIs.
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         let center = UNUserNotificationCenter.current()

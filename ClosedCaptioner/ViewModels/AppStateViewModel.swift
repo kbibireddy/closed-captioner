@@ -11,6 +11,7 @@ import SwiftUI
 class AppStateViewModel: ObservableObject {
     private static let themeDefaultsKey = "ClosedCaptioner.appTheme"
     private static let colorModeDefaultsKey = "ClosedCaptioner.colorMode"
+    private static let fontChoiceDefaultsKey = "ClosedCaptioner.appFont"
     private static let displayNameDefaultsKey = "ClosedCaptioner.displayName"
     private static let relayMessagesDefaultsKey = "ClosedCaptioner.relayMessages"
     private static let radioKeepAliveDefaultsKey = "ClosedCaptioner.radioKeepAlive"
@@ -27,19 +28,26 @@ class AppStateViewModel: ObservableObject {
             UserDefaults.standard.set(theme.rawValue, forKey: Self.themeDefaultsKey)
         }
     }
+    /// App-wide typeface. SF Pro (system) is the default.
+    @Published var fontChoice: AppFontChoice {
+        didSet {
+            UserDefaults.standard.set(fontChoice.rawValue, forKey: Self.fontChoiceDefaultsKey)
+            AppType.fontChoice = fontChoice
+        }
+    }
     /// Nearby identity. Defaults to the device host name; user can set any name.
     @Published var displayName: String {
         didSet {
             UserDefaults.standard.set(displayName, forKey: Self.displayNameDefaultsKey)
         }
     }
-    /// When radio is on, forward nearby captions to other neighbors. Default off.
+    /// When radio is on, forward nearby captions to other neighbors. Default on.
     @Published var relayMessages: Bool {
         didSet {
             UserDefaults.standard.set(relayMessages, forKey: Self.relayMessagesDefaultsKey)
         }
     }
-    /// Auto-off for radio (and relay) after this duration. Default 4 hours.
+    /// Auto-off for radio (and relay) after this duration. Default 30 minutes.
     @Published var radioKeepAlive: RadioKeepAlive {
         didSet {
             UserDefaults.standard.set(radioKeepAlive.rawValue, forKey: Self.radioKeepAliveDefaultsKey)
@@ -82,15 +90,30 @@ class AppStateViewModel: ObservableObject {
             self.colorMode = ColorMode(rawValue: savedMode ?? "") ?? .night
         }
 
+        let savedFont = defaults.string(forKey: Self.fontChoiceDefaultsKey)
+        // Dropped Didot / interim “sans”; map them to System.
+        let migrated: String?
+        switch savedFont {
+        case "didot", "sans": migrated = AppFontChoice.system.rawValue
+        default: migrated = savedFont
+        }
+        let resolvedFont = AppFontChoice(rawValue: migrated ?? "") ?? .system
+        self.fontChoice = resolvedFont
+        AppType.fontChoice = resolvedFont
+
         let savedName = defaults.string(forKey: Self.displayNameDefaultsKey)
         if let savedName, let normalized = P2PConfig.normalizedName(savedName) {
             self.displayName = normalized
         } else {
             self.displayName = Self.hostDisplayName()
         }
-        self.relayMessages = defaults.bool(forKey: Self.relayMessagesDefaultsKey)
+        if defaults.object(forKey: Self.relayMessagesDefaultsKey) == nil {
+            self.relayMessages = true
+        } else {
+            self.relayMessages = defaults.bool(forKey: Self.relayMessagesDefaultsKey)
+        }
         let savedKeepAlive = defaults.string(forKey: Self.radioKeepAliveDefaultsKey)
-        self.radioKeepAlive = RadioKeepAlive(rawValue: savedKeepAlive ?? "") ?? .fourHours
+        self.radioKeepAlive = RadioKeepAlive(rawValue: savedKeepAlive ?? "") ?? .thirtyMinutes
     }
 
     /// Device host name used until the user picks a display name.

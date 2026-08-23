@@ -52,7 +52,7 @@ enum RadioKeepAlive: String, CaseIterable, Identifiable {
 }
 
 enum P2PConfig {
-    /// Bonjour service type for MCNearbyServiceBrowser / Advertiser (1–15 chars).
+    /// Bonjour service type for MCNearbyServiceBrowser / Advertiser (1-15 chars).
     /// Info.plist must list `_cc-p2p._tcp`.
     static let serviceType = "cc-p2p"
 

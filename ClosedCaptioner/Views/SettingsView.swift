@@ -16,7 +16,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: return "General"
+        case .general: return "Preferences"
         case .kpis: return "KPIs"
         case .history: return "History"
         case .logs: return "Logs"
@@ -26,7 +26,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .general: return "circle.lefthalf.filled"
+        case .general: return "slider.horizontal.3"
         case .kpis: return "chart.bar"
         case .history: return "clock"
         case .logs: return "text.alignleft"
@@ -36,7 +36,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var selectedSystemImage: String {
         switch self {
-        case .general: return "circle.lefthalf.filled"
+        case .general: return "slider.horizontal.3"
         case .kpis: return "chart.bar.fill"
         case .history: return "clock.fill"
         case .logs: return "text.alignleft"
@@ -52,6 +52,7 @@ struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
+        let _ = appState.fontChoice
         ZStack {
             appState.colors.background
                 .ignoresSafeArea()

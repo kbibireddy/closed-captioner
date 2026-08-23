@@ -38,14 +38,14 @@ struct PremiumSheetView: View {
                     .tracking(-1.4)
                     .foregroundColor(appState.colors.text)
 
-                Text("Enjoy Closed Captioner without banner or interstitial ads. One-time purchase — yours forever.")
+                Text("Enjoy Closed Captioner without banner or interstitial ads. One-time purchase, yours forever.")
                     .font(AppType.display(16, weight: .medium))
                     .foregroundColor(appState.colors.muted)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
 
                 if premiumManager.isPremium {
-                    Text("Ads removed — thank you!")
+                    Text("Ads removed. Thank you!")
                         .font(AppType.display(17, weight: .bold))
                         .foregroundColor(appState.colors.accent)
                 } else {
@@ -57,7 +57,7 @@ struct PremiumSheetView: View {
                                 ProgressView()
                                     .tint(appState.colors.onAccent)
                             } else {
-                                Text("Remove Ads — \(premiumManager.removeAdsDisplayPrice)")
+                                Text("Remove Ads · \(premiumManager.removeAdsDisplayPrice)")
                                     .font(AppType.display(17, weight: .bold))
                             }
                         }
