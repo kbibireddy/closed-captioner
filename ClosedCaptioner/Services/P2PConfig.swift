@@ -64,10 +64,10 @@ enum P2PConfig {
     static let defaultTTL = 4
     static let maxNeighbors = 6
     static let inviteTimeoutSeconds: TimeInterval = 12
-    /// Rolling window for HUD ↑/↓ rates (sum of bytes in the last N seconds → B/min).
-    static let trafficRateWindowSeconds: TimeInterval = 60
+    /// Rolling window for HUD ↑/↓ rates (sum of bytes in the last N seconds → B/s).
+    static let trafficRateWindowSeconds: TimeInterval = 30
     /// How often published rates refresh so a quiet window decays toward zero.
-    static let trafficRateRefreshSeconds: TimeInterval = 2
+    static let trafficRateRefreshSeconds: TimeInterval = 1
     /// iOS↔macOS Multipeer ICE often fails with `.required` and no identity.
     static let encryptionPreference: MCEncryptionPreference = .optional
     static let inviteRetryLimit = 4

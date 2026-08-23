@@ -2,7 +2,7 @@
 //  AppPerformanceMonitor.swift
 //  ClosedCaptioner
 //
-//  Live process samples plus a rolling 1-hour history (one point every 30s).
+//  App + device samples. Fast series: 15 min @ 3s. Slow series: 1 h @ 30s.
 //
 
 import Combine
@@ -12,12 +12,17 @@ import UIKit
 
 final class AppPerformanceMonitor: ObservableObject {
     static let shared = AppPerformanceMonitor()
-    static let historyInterval: TimeInterval = 30
-    static let historyWindow: TimeInterval = 60 * 60
+    static let fastHistoryInterval: TimeInterval = 3
+    static let fastHistoryWindow: TimeInterval = 15 * 60
+    static let slowHistoryInterval: TimeInterval = 30
+    static let slowHistoryWindow: TimeInterval = 60 * 60
 
     @Published private(set) var memoryBytes: UInt64 = 0
     @Published private(set) var cpuPercent: Double = 0
     @Published private(set) var threadCount: Int = 0
+    @Published private(set) var deviceMemoryBytes: UInt64 = 0
+    @Published private(set) var deviceCPUPercent: Double = 0
+    @Published private(set) var deviceThreadCount: Int = 0
     @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     @Published private(set) var batteryPercent: Int?
     @Published private(set) var isLowPowerMode = false
@@ -28,12 +33,18 @@ final class AppPerformanceMonitor: ObservableObject {
     @Published private(set) var cpuHistory: [KPIMetricSample] = []
     @Published private(set) var memoryHistory: [KPIMetricSample] = []
     @Published private(set) var threadHistory: [KPIMetricSample] = []
+    @Published private(set) var deviceCPUHistory: [KPIMetricSample] = []
+    @Published private(set) var deviceMemoryHistory: [KPIMetricSample] = []
+    @Published private(set) var deviceThreadHistory: [KPIMetricSample] = []
     @Published private(set) var batteryHistory: [KPIMetricSample] = []
     @Published private(set) var diskHistory: [KPIMetricSample] = []
 
     private var liveTimer: Timer?
     private var historyTimer: Timer?
-    private var lastHistoryAt: Date?
+    private var lastFastHistoryAt: Date?
+    private var lastSlowHistoryAt: Date?
+    private var previousHostTicks: (user: natural_t, system: natural_t, idle: natural_t, nice: natural_t)?
+    private var hasDeviceCPUSample = false
     private var memoryWarningObserver: NSObjectProtocol?
     private let processStart = Date()
 
@@ -44,13 +55,13 @@ final class AppPerformanceMonitor: ObservableObject {
         historyTimer?.invalidate()
     }
 
-    /// Rolling 30s history. Safe to call at launch; no-ops if already running.
+    /// Fast 3s history plus slow 30s series. Safe at launch; no-ops if already running.
     func startHistory() {
         guard historyTimer == nil else { return }
         enableMonitoring()
-        sample(recordHistory: true)
-        let timer = Timer(timeInterval: Self.historyInterval, repeats: true) { [weak self] _ in
-            self?.sample(recordHistory: true)
+        sample(recordFast: true, recordSlow: true)
+        let timer = Timer(timeInterval: Self.fastHistoryInterval, repeats: true) { [weak self] _ in
+            self?.sampleFromHistoryTimer()
         }
         RunLoop.main.add(timer, forMode: .common)
         historyTimer = timer
@@ -60,9 +71,9 @@ final class AppPerformanceMonitor: ObservableObject {
     func start() {
         startHistory()
         guard liveTimer == nil else { return }
-        sample(recordHistory: false)
+        sample(recordFast: false, recordSlow: false)
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
-            self?.sample(recordHistory: false)
+            self?.sample(recordFast: false, recordSlow: false)
         }
         RunLoop.main.add(timer, forMode: .common)
         liveTimer = timer
@@ -75,6 +86,12 @@ final class AppPerformanceMonitor: ObservableObject {
 
     var formattedMemory: String { Self.formatBytes(memoryBytes) }
     var formattedCPU: String { String(format: "%.0f%%", cpuPercent) }
+    var formattedThreads: String { "\(threadCount)" }
+    var formattedDeviceMemory: String { Self.formatBytes(deviceMemoryBytes) }
+    var formattedDeviceCPU: String {
+        hasDeviceCPUSample ? String(format: "%.0f%%", deviceCPUPercent) : "…"
+    }
+    var formattedDeviceThreads: String { "\(deviceThreadCount)" }
     var formattedThermal: String {
         switch thermalState {
         case .nominal: return "Nominal"
@@ -90,7 +107,6 @@ final class AppPerformanceMonitor: ObservableObject {
     }
     var formattedDisk: String { Self.formatBytes(freeDiskBytes) }
     var formattedUptime: String { formatUptime(appUptime) }
-    var formattedThreads: String { "\(threadCount)" }
 
     static func formatBytes(_ bytes: UInt64) -> String {
         let n = Double(bytes)
@@ -117,11 +133,24 @@ final class AppPerformanceMonitor: ObservableObject {
         }
     }
 
-    private func sample(recordHistory: Bool) {
+    private func sampleFromHistoryTimer() {
+        let now = Date()
+        let recordSlow = lastSlowHistoryAt == nil
+            || now.timeIntervalSince(lastSlowHistoryAt!) >= Self.slowHistoryInterval - 0.5
+        sample(recordFast: true, recordSlow: recordSlow)
+    }
+
+    private func sample(recordFast: Bool, recordSlow: Bool) {
         memoryBytes = currentMemoryFootprint()
         let (cpu, threads) = currentCPUAndThreadCount()
         cpuPercent = cpu
         threadCount = threads
+        deviceMemoryBytes = currentDeviceMemoryUsed()
+        if let deviceCPU = currentDeviceCPUPercent() {
+            deviceCPUPercent = deviceCPU
+            hasDeviceCPUSample = true
+        }
+        deviceThreadCount = currentDeviceThreadCount()
         thermalState = ProcessInfo.processInfo.thermalState
         isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
         let level = UIDevice.current.batteryLevel
@@ -129,36 +158,53 @@ final class AppPerformanceMonitor: ObservableObject {
         freeDiskBytes = currentFreeDisk()
         appUptime = Date().timeIntervalSince(processStart)
 
-        if recordHistory {
-            appendHistory()
-        } else if lastHistoryAt == nil {
-            appendHistory()
+        if recordFast || lastFastHistoryAt == nil {
+            appendFastHistory()
+        }
+        if recordSlow || lastSlowHistoryAt == nil {
+            appendSlowHistory()
         }
     }
 
-    private func appendHistory() {
+    private func appendFastHistory() {
         let now = Date()
-        if let lastHistoryAt, now.timeIntervalSince(lastHistoryAt) < Self.historyInterval - 0.5 {
+        if let lastFastHistoryAt, now.timeIntervalSince(lastFastHistoryAt) < Self.fastHistoryInterval - 0.5 {
             return
         }
-        lastHistoryAt = now
+        lastFastHistoryAt = now
         cpuHistory.append(KPIMetricSample(date: now, value: cpuPercent))
         memoryHistory.append(KPIMetricSample(date: now, value: Double(memoryBytes)))
         threadHistory.append(KPIMetricSample(date: now, value: Double(threadCount)))
+        if hasDeviceCPUSample {
+            deviceCPUHistory.append(KPIMetricSample(date: now, value: deviceCPUPercent))
+        }
+        deviceMemoryHistory.append(KPIMetricSample(date: now, value: Double(deviceMemoryBytes)))
+        deviceThreadHistory.append(KPIMetricSample(date: now, value: Double(deviceThreadCount)))
+        trim(&cpuHistory, window: Self.fastHistoryWindow, now: now)
+        trim(&memoryHistory, window: Self.fastHistoryWindow, now: now)
+        trim(&threadHistory, window: Self.fastHistoryWindow, now: now)
+        trim(&deviceCPUHistory, window: Self.fastHistoryWindow, now: now)
+        trim(&deviceMemoryHistory, window: Self.fastHistoryWindow, now: now)
+        trim(&deviceThreadHistory, window: Self.fastHistoryWindow, now: now)
+    }
+
+    private func appendSlowHistory() {
+        let now = Date()
+        if let lastSlowHistoryAt, now.timeIntervalSince(lastSlowHistoryAt) < Self.slowHistoryInterval - 0.5 {
+            return
+        }
+        lastSlowHistoryAt = now
         diskHistory.append(KPIMetricSample(date: now, value: Double(freeDiskBytes)))
         if let batteryPercent {
             batteryHistory.append(KPIMetricSample(date: now, value: Double(batteryPercent)))
         }
-        trimHistory(now: now)
+        trim(&diskHistory, window: Self.slowHistoryWindow, now: now)
+        trim(&batteryHistory, window: Self.slowHistoryWindow, now: now)
     }
 
-    private func trimHistory(now: Date) {
-        let cutoff = now.addingTimeInterval(-Self.historyWindow)
-        cpuHistory.removeAll { $0.date < cutoff }
-        memoryHistory.removeAll { $0.date < cutoff }
-        threadHistory.removeAll { $0.date < cutoff }
-        batteryHistory.removeAll { $0.date < cutoff }
-        diskHistory.removeAll { $0.date < cutoff }
+    private func trim(_ history: inout [KPIMetricSample], window: TimeInterval, now: Date) {
+        let cutoff = now.addingTimeInterval(-window)
+        history.removeAll { $0.date < cutoff }
     }
 
     private func currentMemoryFootprint() -> UInt64 {
@@ -171,6 +217,63 @@ final class AppPerformanceMonitor: ObservableObject {
         }
         guard result == KERN_SUCCESS else { return 0 }
         return info.phys_footprint
+    }
+
+    /// Whole-device CPU from host tick deltas (user+system+nice vs idle).
+    private func currentDeviceCPUPercent() -> Double? {
+        var info = host_cpu_load_info()
+        var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.stride / MemoryLayout<integer_t>.stride)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return nil }
+        let user = info.cpu_ticks.0
+        let system = info.cpu_ticks.1
+        let idle = info.cpu_ticks.2
+        let nice = info.cpu_ticks.3
+        defer { previousHostTicks = (user, system, idle, nice) }
+        guard let previous = previousHostTicks else { return nil }
+        let dUser = Double(user &- previous.user)
+        let dSystem = Double(system &- previous.system)
+        let dIdle = Double(idle &- previous.idle)
+        let dNice = Double(nice &- previous.nice)
+        let total = dUser + dSystem + dIdle + dNice
+        guard total > 0 else { return nil }
+        return min(100, (dUser + dSystem + dNice) / total * 100)
+    }
+
+    /// Occupied device RAM (physical − free − speculative).
+    private func currentDeviceMemoryUsed() -> UInt64 {
+        var stats = vm_statistics64()
+        var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.stride / MemoryLayout<integer_t>.stride)
+        let result = withUnsafeMutablePointer(to: &stats) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return 0 }
+        let page = UInt64(vm_kernel_page_size)
+        let free = (UInt64(stats.free_count) + UInt64(stats.speculative_count)) * page
+        let total = ProcessInfo.processInfo.physicalMemory
+        return total > free ? total - free : 0
+    }
+
+    /// Runnable + waiting threads on the default processor set (device-wide).
+    private func currentDeviceThreadCount() -> Int {
+        var pset: processor_set_name_t = 0
+        guard processor_set_default(mach_host_self(), &pset) == KERN_SUCCESS else { return 0 }
+        defer { mach_port_deallocate(mach_task_self_, pset) }
+        var info = processor_set_load_info()
+        var count = mach_msg_type_number_t(MemoryLayout<processor_set_load_info>.stride / MemoryLayout<integer_t>.stride)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                processor_set_statistics(pset, PROCESSOR_SET_LOAD_INFO, $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return 0 }
+        return Int(info.thread_count)
     }
 
     /// One `task_threads` pass for CPU and count. Each port is deallocated;

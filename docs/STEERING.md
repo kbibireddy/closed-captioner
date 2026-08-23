@@ -40,7 +40,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 | Tab | Purpose |
 |-----|---------|
 | **Preferences** | Display name, nearby relay toggle, Day/Night, theme picker |
-| **KPIs** | Performance, radio, and traffic sparkline cards (last hour) plus remaining tables; Message Log can be cleared |
+| **KPIs** | App vs phone CPU/memory/threads; 15 min @ 3s for live series, 1 h @ 30s for slow counters; Message Log can be cleared |
 | **History** | Saved captions with timestamps; tap to view; delete |
 | **Logs** | Full P2P message log (newest at bottom) |
 | **Purchases** | Remove Ads IAP + Restore |
@@ -107,7 +107,7 @@ Theme, color mode, display name, relay flag, caption history, P2P KPI counters (
 | Location | Action |
 |----------|--------|
 | Top left | Settings |
-| Top right | P2P radio + nearby status (`Looking…` / `N people`) |
+| Top right | P2P radio + status (`Tap to join` off; on: ↓/↑ B/s from 30s window) |
 | Bottom left | Keyboard |
 | Bottom center | Mic (long-press start/stop) |
 | Bottom right | Eraser |

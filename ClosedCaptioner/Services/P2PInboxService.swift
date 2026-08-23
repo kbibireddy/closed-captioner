@@ -43,10 +43,10 @@ final class P2PInboxService: NSObject, ObservableObject {
     @Published private(set) var lastHop = 0
     @Published private(set) var bytesSent = 0
     @Published private(set) var bytesReceived = 0
-    /// Bytes sent in the last rolling minute (HUD rate; not lifetime total).
-    @Published private(set) var bytesSentPerMinute = 0
-    /// Bytes received in the last rolling minute (HUD rate; not lifetime total).
-    @Published private(set) var bytesReceivedPerMinute = 0
+    /// Rolling average send rate over the last 30s (HUD; not lifetime total).
+    @Published private(set) var bytesSentPerSecond = 0
+    /// Rolling average receive rate over the last 30s (HUD; not lifetime total).
+    @Published private(set) var bytesReceivedPerSecond = 0
 
     @Published private(set) var peerHistory: [KPIMetricSample] = []
     @Published private(set) var connectHistory: [KPIMetricSample] = []
@@ -71,7 +71,8 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var trafficSamples: [(at: Date, sent: Int, received: Int)] = []
     private var trafficRateTimer: Timer?
     private var kpiHistoryTimer: Timer?
-    private var lastKPIHistoryAt: Date?
+    private var lastFastKPIHistoryAt: Date?
+    private var lastSlowKPIHistoryAt: Date?
     #if os(iOS)
     private var backgroundTask = UIBackgroundTaskIdentifier.invalid
     #endif
@@ -302,8 +303,8 @@ final class P2PInboxService: NSObject, ObservableObject {
         knownConnected.removeAll()
         connectedPeerCount = 0
         trafficSamples.removeAll()
-        bytesSentPerMinute = 0
-        bytesReceivedPerMinute = 0
+        bytesSentPerSecond = 0
+        bytesReceivedPerSecond = 0
     }
 
     private func resetStats() {
@@ -321,8 +322,8 @@ final class P2PInboxService: NSObject, ObservableObject {
         bytesSent = 0
         bytesReceived = 0
         trafficSamples.removeAll()
-        bytesSentPerMinute = 0
-        bytesReceivedPerMinute = 0
+        bytesSentPerSecond = 0
+        bytesReceivedPerSecond = 0
         peerHistory.removeAll()
         connectHistory.removeAll()
         disconnectHistory.removeAll()
@@ -331,7 +332,8 @@ final class P2PInboxService: NSObject, ObservableObject {
         messagesReceivedHistory.removeAll()
         bytesSentHistory.removeAll()
         bytesReceivedHistory.removeAll()
-        lastKPIHistoryAt = nil
+        lastFastKPIHistoryAt = nil
+        lastSlowKPIHistoryAt = nil
     }
 
     private func recordTraffic(sent: Int, received: Int) {
@@ -362,16 +364,27 @@ final class P2PInboxService: NSObject, ObservableObject {
     }
 
     private func refreshTrafficRates() {
-        let cutoff = Date().addingTimeInterval(-P2PConfig.trafficRateWindowSeconds)
+        let now = Date()
+        let window = P2PConfig.trafficRateWindowSeconds
+        let cutoff = now.addingTimeInterval(-window)
         trafficSamples.removeAll { $0.at < cutoff }
-        bytesSentPerMinute = trafficSamples.reduce(0) { $0 + $1.sent }
-        bytesReceivedPerMinute = trafficSamples.reduce(0) { $0 + $1.received }
+        let sent = trafficSamples.reduce(0) { $0 + $1.sent }
+        let received = trafficSamples.reduce(0) { $0 + $1.received }
+        // Partial window after radio-on: divide by elapsed so early traffic isn’t understated.
+        let elapsed: TimeInterval
+        if let started = listeningStartedAt {
+            elapsed = min(window, max(1, now.timeIntervalSince(started)))
+        } else {
+            elapsed = window
+        }
+        bytesSentPerSecond = Int((Double(sent) / elapsed).rounded())
+        bytesReceivedPerSecond = Int((Double(received) / elapsed).rounded())
     }
 
     private func startKPIHistory() {
         guard kpiHistoryTimer == nil else { return }
         recordKPIHistory()
-        let timer = Timer(timeInterval: AppPerformanceMonitor.historyInterval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: AppPerformanceMonitor.fastHistoryInterval, repeats: true) { [weak self] _ in
             self?.recordKPIHistory()
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -380,23 +393,34 @@ final class P2PInboxService: NSObject, ObservableObject {
 
     private func recordKPIHistory() {
         let now = Date()
-        if let lastKPIHistoryAt, now.timeIntervalSince(lastKPIHistoryAt) < AppPerformanceMonitor.historyInterval - 0.5 {
-            return
+        let recordFast = lastFastKPIHistoryAt == nil
+            || now.timeIntervalSince(lastFastKPIHistoryAt!) >= AppPerformanceMonitor.fastHistoryInterval - 0.5
+        let recordSlow = lastSlowKPIHistoryAt == nil
+            || now.timeIntervalSince(lastSlowKPIHistoryAt!) >= AppPerformanceMonitor.slowHistoryInterval - 0.5
+        if recordFast {
+            lastFastKPIHistoryAt = now
+            appendKPISample(Double(connectedPeerCount), to: &peerHistory, at: now, window: AppPerformanceMonitor.fastHistoryWindow)
+            appendKPISample(Double(messagesSent), to: &messagesSentHistory, at: now, window: AppPerformanceMonitor.fastHistoryWindow)
+            appendKPISample(Double(messagesReceived), to: &messagesReceivedHistory, at: now, window: AppPerformanceMonitor.fastHistoryWindow)
+            appendKPISample(Double(bytesSent), to: &bytesSentHistory, at: now, window: AppPerformanceMonitor.fastHistoryWindow)
+            appendKPISample(Double(bytesReceived), to: &bytesReceivedHistory, at: now, window: AppPerformanceMonitor.fastHistoryWindow)
         }
-        lastKPIHistoryAt = now
-        appendKPISample(Double(connectedPeerCount), to: &peerHistory, at: now)
-        appendKPISample(Double(connectCount), to: &connectHistory, at: now)
-        appendKPISample(Double(disconnectCount), to: &disconnectHistory, at: now)
-        appendKPISample(Double(inviteTimeouts), to: &inviteTimeoutHistory, at: now)
-        appendKPISample(Double(messagesSent), to: &messagesSentHistory, at: now)
-        appendKPISample(Double(messagesReceived), to: &messagesReceivedHistory, at: now)
-        appendKPISample(Double(bytesSent), to: &bytesSentHistory, at: now)
-        appendKPISample(Double(bytesReceived), to: &bytesReceivedHistory, at: now)
+        if recordSlow {
+            lastSlowKPIHistoryAt = now
+            appendKPISample(Double(connectCount), to: &connectHistory, at: now, window: AppPerformanceMonitor.slowHistoryWindow)
+            appendKPISample(Double(disconnectCount), to: &disconnectHistory, at: now, window: AppPerformanceMonitor.slowHistoryWindow)
+            appendKPISample(Double(inviteTimeouts), to: &inviteTimeoutHistory, at: now, window: AppPerformanceMonitor.slowHistoryWindow)
+        }
     }
 
-    private func appendKPISample(_ value: Double, to history: inout [KPIMetricSample], at date: Date) {
+    private func appendKPISample(
+        _ value: Double,
+        to history: inout [KPIMetricSample],
+        at date: Date,
+        window: TimeInterval
+    ) {
         history.append(KPIMetricSample(date: date, value: value))
-        let cutoff = date.addingTimeInterval(-AppPerformanceMonitor.historyWindow)
+        let cutoff = date.addingTimeInterval(-window)
         history.removeAll { $0.date < cutoff }
     }
 

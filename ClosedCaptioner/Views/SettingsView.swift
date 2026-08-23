@@ -177,26 +177,56 @@ struct KPISettingsView: View {
 
                     LazyVGrid(columns: cardColumns, spacing: 10) {
                         KPIMetricCard(
-                            title: "CPU",
+                            title: "App CPU",
                             valueText: performance.formattedCPU,
                             samples: performance.cpuHistory,
                             colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
                             yScale: .zeroToAtLeast(100),
                             formatY: { String(format: "%.0f%%", $0) }
                         )
                         KPIMetricCard(
-                            title: "Memory",
+                            title: "CPU",
+                            valueText: performance.formattedDeviceCPU,
+                            samples: performance.deviceCPUHistory,
+                            colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
+                            yScale: .zeroToAtLeast(100),
+                            formatY: { String(format: "%.0f%%", $0) }
+                        )
+                        KPIMetricCard(
+                            title: "App Memory",
                             valueText: performance.formattedMemory,
                             samples: performance.memoryHistory,
                             colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
                             yScale: .padded,
                             formatY: { AppPerformanceMonitor.formatBytes($0) }
                         )
                         KPIMetricCard(
-                            title: "Threads",
+                            title: "Memory",
+                            valueText: performance.formattedDeviceMemory,
+                            samples: performance.deviceMemoryHistory,
+                            colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
+                            yScale: .padded,
+                            formatY: { AppPerformanceMonitor.formatBytes($0) }
+                        )
+                        KPIMetricCard(
+                            title: "App Threads",
                             valueText: performance.formattedThreads,
                             samples: performance.threadHistory,
                             colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
+                            yScale: .zeroToAtLeast(8),
+                            formatY: { String(format: "%.0f", $0) }
+                        )
+                        KPIMetricCard(
+                            title: "Threads",
+                            valueText: performance.formattedDeviceThreads,
+                            samples: performance.deviceThreadHistory,
+                            colors: appState.colors,
+                            window: AppPerformanceMonitor.fastHistoryWindow,
                             yScale: .zeroToAtLeast(8),
                             formatY: { String(format: "%.0f", $0) }
                         )
@@ -205,6 +235,7 @@ struct KPISettingsView: View {
                             valueText: performance.formattedBattery,
                             samples: performance.batteryHistory,
                             colors: appState.colors,
+                            window: AppPerformanceMonitor.slowHistoryWindow,
                             yScale: .zeroToHundred,
                             formatY: { String(format: "%.0f%%", $0) }
                         )
@@ -213,6 +244,7 @@ struct KPISettingsView: View {
                             valueText: performance.formattedDisk,
                             samples: performance.diskHistory,
                             colors: appState.colors,
+                            window: AppPerformanceMonitor.slowHistoryWindow,
                             yScale: .padded,
                             formatY: { AppPerformanceMonitor.formatBytes($0) }
                         )
@@ -235,6 +267,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.connectedPeerCount)",
                         samples: p2pInbox.peerHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -243,6 +276,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.connectCount)",
                         samples: p2pInbox.connectHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -251,6 +285,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.disconnectCount)",
                         samples: p2pInbox.disconnectHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -259,6 +294,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.inviteTimeouts)",
                         samples: p2pInbox.inviteTimeoutHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -270,6 +306,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.messagesSent)",
                         samples: p2pInbox.messagesSentHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -278,6 +315,7 @@ struct KPISettingsView: View {
                         valueText: "\(p2pInbox.messagesReceived)",
                         samples: p2pInbox.messagesReceivedHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
                         formatY: formatCount
                     )
@@ -286,6 +324,7 @@ struct KPISettingsView: View {
                         valueText: compactBytes(p2pInbox.bytesSent),
                         samples: p2pInbox.bytesSentHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .padded,
                         formatY: { compactBytes(Int($0.rounded())) }
                     )
@@ -294,6 +333,7 @@ struct KPISettingsView: View {
                         valueText: compactBytes(p2pInbox.bytesReceived),
                         samples: p2pInbox.bytesReceivedHistory,
                         colors: appState.colors,
+                        window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .padded,
                         formatY: { compactBytes(Int($0.rounded())) }
                     )

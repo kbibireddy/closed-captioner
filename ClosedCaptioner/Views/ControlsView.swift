@@ -80,8 +80,8 @@ struct ControlsView: View {
                 colors: appState.colors,
                 isListening: p2pInbox.isListening,
                 peers: p2pInbox.connectedPeerCount,
-                bytesInPerMinute: p2pInbox.bytesReceivedPerMinute,
-                bytesOutPerMinute: p2pInbox.bytesSentPerMinute,
+                bytesInPerSecond: p2pInbox.bytesReceivedPerSecond,
+                bytesOutPerSecond: p2pInbox.bytesSentPerSecond,
                 isRelaying: appState.relayMessages && p2pInbox.isListening,
                 onJoin: {
                     if !p2pInbox.isListening {
@@ -186,24 +186,24 @@ struct ControlsView: View {
     }
 }
 
-/// Compact radio status left of the antenna. Off: join CTA. On: reach + rolling traffic.
+/// Compact radio status left of the antenna. Off: join CTA. On: reach bars + ↓/↑ B/s.
 /// Lifetime counters stay under Settings → KPIs.
 private struct P2PRadioStatsView: View {
     let colors: ThemeColors
     let isListening: Bool
     let peers: Int
-    let bytesInPerMinute: Int
-    let bytesOutPerMinute: Int
+    let bytesInPerSecond: Int
+    let bytesOutPerSecond: Int
     let isRelaying: Bool
     let onJoin: () -> Void
 
-    private var reachLevel: (bars: Int, label: String) {
+    private var filledBars: Int {
         switch peers {
-        case 0: return (0, "Looking…")
-        case 1: return (1, "Thin")
-        case 2, 3: return (2, "Fair")
-        case 4, 5: return (3, "Strong")
-        default: return (4, "Full")
+        case 0: return 0
+        case 1: return 1
+        case 2, 3: return 2
+        case 4, 5: return 3
+        default: return 4
         }
     }
 
@@ -240,74 +240,66 @@ private struct P2PRadioStatsView: View {
     }
 
     private var onState: some View {
-        let reach = reachLevel
-        return VStack(alignment: .trailing, spacing: 2) {
+        VStack(alignment: .trailing, spacing: 3) {
             Text("Radio")
                 .font(AppType.display(10, weight: .bold))
                 .tracking(0.6)
                 .textCase(.uppercase)
                 .foregroundColor(colors.muted)
 
-            if peers == 0 {
-                Text("Looking…")
-                    .font(AppType.display(13, weight: .semibold))
-                    .foregroundColor(colors.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            } else {
-                HStack(alignment: .center, spacing: 6) {
-                    reachBars(filled: reach.bars)
-                    Text(reach.label)
-                        .font(AppType.display(13, weight: .semibold))
-                        .foregroundColor(colors.text)
+            HStack(alignment: .center, spacing: 5) {
+                reachBars(filled: filledBars)
+                VStack(alignment: .trailing, spacing: 2) {
+                    rateLabel(direction: "arrow.down", bytesPerSecond: bytesInPerSecond)
+                    rateLabel(direction: "arrow.up", bytesPerSecond: bytesOutPerSecond)
                 }
             }
+        }
+    }
 
-            Text(trafficLine)
-                .font(AppType.display(10, weight: .medium))
+    private func rateLabel(direction: String, bytesPerSecond: Int) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: direction)
+                .font(AppType.display(7, weight: .bold))
+                .foregroundColor(colors.accent)
+            Text(compactRate(bytesPerSecond))
+                .font(AppType.display(8, weight: .semibold))
                 .monospacedDigit()
-                .foregroundColor(colors.muted)
+                .foregroundColor(colors.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
     }
 
+    /// One bar cluster tall enough to sit beside both ↓/↑ rows (~20% smaller).
     private func reachBars(filled: Int) -> some View {
-        HStack(alignment: .bottom, spacing: 2) {
+        HStack(alignment: .bottom, spacing: 1.5) {
             ForEach(0..<4, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(index < filled ? colors.accent : colors.line)
-                    .frame(width: 3, height: CGFloat(6 + index * 3))
+                RoundedRectangle(cornerRadius: 0.8, style: .continuous)
+                    .fill(index < filled ? colors.accentFill : colors.line)
+                    .frame(width: 2.4, height: CGFloat(8 + index * 4))
             }
         }
-        .frame(height: 15)
+        .frame(height: 22)
         .accessibilityHidden(true)
     }
 
-    private var trafficLine: String {
-        "↓\(compactRate(bytesInPerMinute)) ↑\(compactRate(bytesOutPerMinute))/m"
-    }
-
-    private func compactRate(_ bytesPerMinute: Int) -> String {
-        if bytesPerMinute < 1000 { return "\(bytesPerMinute)B" }
-        if bytesPerMinute < 1_000_000 {
-            let k = Double(bytesPerMinute) / 1000.0
-            return String(format: k >= 10 ? "%.0fk" : "%.1fk", k)
+    private func compactRate(_ bytesPerSecond: Int) -> String {
+        if bytesPerSecond < 1000 { return "\(bytesPerSecond) B/s" }
+        if bytesPerSecond < 1_000_000 {
+            let k = Double(bytesPerSecond) / 1000.0
+            return String(format: k >= 10 ? "%.0fk B/s" : "%.1fk B/s", k)
         }
-        let m = Double(bytesPerMinute) / 1_000_000.0
-        return String(format: m >= 10 ? "%.0fM" : "%.1fM", m)
+        let m = Double(bytesPerSecond) / 1_000_000.0
+        return String(format: m >= 10 ? "%.0fM B/s" : "%.1fM B/s", m)
     }
 
     private var accessibilitySummary: String {
         guard isListening else { return "Off, tap to join" }
-        var summary: String
-        if peers == 0 {
-            summary = "Looking for peers"
-        } else {
-            let reach = reachLevel
-            summary = "\(peers) connected, \(reach.label.lowercased()) reach"
-        }
-        summary += ", \(compactRate(bytesInPerMinute)) in and \(compactRate(bytesOutPerMinute)) out per minute"
+        var summary = peers == 0
+            ? "Looking for peers"
+            : "\(peers) connected, reach \(filledBars) of 4"
+        summary += ", \(compactRate(bytesInPerSecond)) down, \(compactRate(bytesOutPerSecond)) up"
         if isRelaying {
             summary += ", relaying"
         }

@@ -9,7 +9,7 @@ Nearby messaging. Radio on: iOS browses and advertises. Swipe up on a caption to
 | Piece | Behavior |
 |--------|----------|
 | Radio icon, top right | Off by default. On = browse + advertise Multipeer `cc-p2p`. Stays up if you switch apps or lock the phone until you turn it off, force-quit, or the auto-off timer (Settings → General, default 30 minutes). Leaving the app with radio on posts a local iOS notification (Allow Notifications on first launch; check Settings → Closed Captioner → Notifications if it never appears). iOS may still pause it to save battery. |
-| Radio status (left of icon) | While on: labeled **Nearby**, then `Looking…` or `N people`. If **Relay messages** is on, a **Relaying** line. Hidden when radio is off. Detailed counters are in Settings → KPIs. |
+| Radio status (left of icon) | Off: **Tap to join**. On: **Radio**, then ↓ B/s and ↑ B/s (rolling 30s average). Detailed counters are in Settings → KPIs. |
 | Relay messages | Settings → Preferences → Nearby. **On by default.** Radio must be on. Forwards payloads that have an `id` (TTL 4). v1 / no-id packets are displayed only, not forwarded. No catch-up. |
 | Live log strip | Directly **above the bottom banner**. Transparent. New York serif (`AppType.display`) like captions / Settings titles. Multi-line until 180 characters. Relative age (`1s ago`). Height hugs one row, then grows to 50pt **+ 75%** and scrolls. Top of a full window fades to clear; latest row stays at the bottom. |
 | Log row | `[display name] message… HH:mm:ss` — one line, message truncated. Newest at the bottom. Max **200** rows; oldest is dropped. |
@@ -23,7 +23,7 @@ Radio **on** browses and advertises. Two phones with radio on can see each other
 
 1. Install Closed Captioner on a physical iPhone (see [`device-deploy.md`](device-deploy.md)).
 2. On the Mac: `cd tools/p2p-radio && swift run p2p-radio` (no default message).
-3. On the phone: open the app, tap the radio (top right) on, allow Local Network. **Nearby** / **Looking…** appears left of the radio.
+3. On the phone: open the app, tap the radio (top right) on, allow Local Network. **Radio** with ↓/↑ rates appears left of the antenna.
 4. Type a line in the Mac terminal → a **new row is appended** in the log, not in the center caption. After the session connects, the status should read **1 person**.
 5. Put text on the main screen (mic or keyboard). Swipe **up** on the caption.
 6. Caption flies off the top, is saved to History, and a row with **your display name** appears in the log only after the send succeeds. Mac terminal should print the same text.

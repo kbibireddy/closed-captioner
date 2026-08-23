@@ -27,12 +27,20 @@ struct KPIMetricCard: View {
     let valueText: String
     let samples: [KPIMetricSample]
     let colors: ThemeColors
+    var window: TimeInterval = AppPerformanceMonitor.fastHistoryWindow
     var yScale: KPIChartYScale = .padded
     var formatY: (Double) -> String = { String(format: "%.0f", $0) }
 
     private var windowStart: Date {
-        Date().addingTimeInterval(-AppPerformanceMonitor.historyWindow)
+        Date().addingTimeInterval(-window)
     }
+
+    private static let axisTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
 
     private var yDomain: ClosedRange<Double> {
         let values = samples.map(\.value)
@@ -83,9 +91,9 @@ struct KPIMetricCard: View {
             }
 
             HStack {
-                Text("−1h")
+                Text(Self.axisTimeFormatter.string(from: windowStart))
                 Spacer()
-                Text("now")
+                Text(Self.axisTimeFormatter.string(from: Date()))
             }
             .font(AppType.display(10, weight: .medium))
             .foregroundColor(colors.muted)
