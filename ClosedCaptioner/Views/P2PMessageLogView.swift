@@ -3,8 +3,8 @@
 //  ClosedCaptioner
 //
 //  Transparent live log above the bottom banner. Newest at the bottom.
-//  Height hugs content, then grows and scrolls. Fade stays solid through
-//  the lower half, then eases to clear at the top.
+//  Frame is always the max height. Fade stays solid through the lower
+//  half, then eases to clear at the top.
 //
 
 import SwiftUI
@@ -24,13 +24,6 @@ struct P2PMessageLogView: View {
         contentHeight > Self.maxHeight + 0.5
     }
 
-    private var fittedHeight: CGFloat {
-        let measured = contentHeight > 0 ? contentHeight : Self.oneLineHeight
-        return min(measured, Self.maxHeight)
-    }
-
-    private static let oneLineHeight: CGFloat = 22
-
     var body: some View {
         logBody
             .onPreferenceChange(P2PLogContentHeightKey.self) { newHeight in
@@ -39,14 +32,8 @@ struct P2PMessageLogView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: fittedHeight, alignment: .bottom)
-            .mask {
-                if isOverflowing || entries.count >= 2 {
-                    fadeMask
-                } else {
-                    Color.black
-                }
-            }
+            .frame(height: Self.maxHeight, alignment: .bottom)
+            .mask(fadeMask)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Nearby message log")
     }
