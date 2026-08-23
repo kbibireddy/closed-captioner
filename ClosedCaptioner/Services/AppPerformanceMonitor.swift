@@ -92,11 +92,10 @@ final class AppPerformanceMonitor: ObservableObject {
         memoryBytes = memory
         if memory > peakMemoryBytes { peakMemoryBytes = memory }
 
-        let cpu = currentCPUPercent()
+        let (cpu, threads) = currentCPUAndThreadCount()
         cpuPercent = cpu
         if cpu > peakCPUPercent { peakCPUPercent = cpu }
-
-        threadCount = currentThreadCount()
+        threadCount = threads
         thermalState = ProcessInfo.processInfo.thermalState
         isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
         let level = UIDevice.current.batteryLevel
@@ -117,12 +116,14 @@ final class AppPerformanceMonitor: ObservableObject {
         return info.phys_footprint
     }
 
-    private func currentCPUPercent() -> Double {
+    /// One `task_threads` pass for CPU and count. Each port is deallocated;
+    /// the array is `vm_deallocate`d in `defer`.
+    private func currentCPUAndThreadCount() -> (cpu: Double, threads: Int) {
         var threadList: thread_act_array_t?
         var count: mach_msg_type_number_t = 0
         guard task_threads(mach_task_self_, &threadList, &count) == KERN_SUCCESS,
               let threads = threadList else {
-            return 0
+            return (0, 0)
         }
         defer {
             let size = vm_size_t(MemoryLayout<thread_t>.stride * Int(count))
@@ -143,19 +144,8 @@ final class AppPerformanceMonitor: ObservableObject {
             guard info.flags & TH_FLAGS_IDLE == 0 else { continue }
             total += Double(info.cpu_usage) / Double(TH_USAGE_SCALE) * 100
         }
-        return min(total, 100 * Double(ProcessInfo.processInfo.activeProcessorCount))
-    }
-
-    private func currentThreadCount() -> Int {
-        var threadList: thread_act_array_t?
-        var count: mach_msg_type_number_t = 0
-        guard task_threads(mach_task_self_, &threadList, &count) == KERN_SUCCESS,
-              let threads = threadList else {
-            return 0
-        }
-        let size = vm_size_t(MemoryLayout<thread_t>.stride * Int(count))
-        vm_deallocate(mach_task_self_, vm_address_t(UInt(bitPattern: threads)), size)
-        return Int(count)
+        let cpu = min(total, 100 * Double(ProcessInfo.processInfo.activeProcessorCount))
+        return (cpu, Int(count))
     }
 
     private func currentFreeDisk() -> UInt64 {
