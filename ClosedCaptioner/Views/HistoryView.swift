@@ -23,22 +23,22 @@ struct HistoryContentView: View {
                     Button(action: {
                         showDeleteAllConfirmation = true
                     }) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Image(systemName: "trash")
-                                .font(.system(size: 10.2, weight: .semibold))
+                                .font(AppType.ui(12, weight: .bold))
                             Text("Delete All")
-                                .font(.system(size: 12.75, weight: .semibold))
+                                .font(AppType.ui(13, weight: .bold))
                         }
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 12.75)
-                        .padding(.vertical, 7.65)
-                        .background(appState.colorMode.background)
+                        .foregroundColor(appState.colors.danger)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(appState.colors.card)
+                        .clipShape(Capsule())
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.red, lineWidth: 1)
+                            Capsule().stroke(appState.colors.danger.opacity(0.7), lineWidth: 1)
                         )
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                     .padding(.top, 4)
                 }
 
@@ -48,12 +48,13 @@ struct HistoryContentView: View {
             if historyManager.sortedCaptions.isEmpty {
                 Spacer()
                 Text("No history yet")
-                    .font(.system(size: 24, weight: .medium, design: .default))
-                    .foregroundColor(appState.colorMode.text.opacity(0.5))
+                    .font(AppType.display(28))
+                    .tracking(-0.8)
+                    .foregroundColor(appState.colors.muted)
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
+                    LazyVStack(spacing: 14) {
                         ForEach(historyManager.sortedCaptions) { caption in
                             HistoryRow(
                                 caption: caption,
@@ -68,9 +69,9 @@ struct HistoryContentView: View {
                             )
                         }
                     }
-                    .padding()
+                    .padding(20)
                 }
-                .background(appState.colorMode.background)
+                .background(appState.colors.background)
             }
         }
         .alert("Delete All History?", isPresented: $showDeleteAllConfirmation) {
@@ -126,17 +127,17 @@ struct HistoryRow: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Self.dateFormatter.string(from: caption.timestamp))
-                    .font(.system(size: 14, weight: .medium, design: .default))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.ui(13, weight: .bold))
+                    .foregroundColor(appState.colors.text)
                 Text(Self.timeFormatter.string(from: caption.timestamp))
-                    .font(.system(size: 14, weight: .regular, design: .default))
-                    .foregroundColor(appState.colorMode.text.opacity(0.7))
+                    .font(AppType.ui(12, weight: .medium))
+                    .foregroundColor(appState.colors.muted)
             }
             .frame(width: 120, alignment: .leading)
 
             Text(caption.text)
-                .font(.system(size: 18, weight: .regular, design: .default))
-                .foregroundColor(appState.colorMode.text)
+                .font(AppType.ui(17, weight: .medium))
+                .foregroundColor(appState.colors.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .multilineTextAlignment(.leading)
                 .contentShape(Rectangle())
@@ -146,18 +147,12 @@ struct HistoryRow: View {
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.red)
+                    .font(AppType.ui(15, weight: .semibold))
+                    .foregroundColor(appState.colors.danger)
                     .frame(width: 30, height: 30)
             }
         }
-        .padding()
-        .background(appState.colorMode.buttonBackground)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(appState.colorMode.text.opacity(0.2), lineWidth: 1)
-        )
+        .appCard(for: appState.colors)
     }
 }
 
@@ -168,7 +163,7 @@ struct HistoryDetailView: View {
 
     var body: some View {
         ZStack {
-            appState.colorMode.background
+            appState.colors.background
                 .ignoresSafeArea()
 
             VStack {
@@ -183,7 +178,7 @@ struct HistoryDetailView: View {
                 }
 
                 Spacer()
-                CaptionTextDisplay(text: caption.text, colorMode: appState.colorMode)
+                CaptionTextDisplay(text: caption.text, colors: appState.colors)
                 Spacer()
             }
         }

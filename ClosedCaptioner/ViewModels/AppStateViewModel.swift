@@ -9,8 +9,21 @@ import SwiftUI
 
 /// View model that manages application state including UI modes and animations
 class AppStateViewModel: ObservableObject {
-    /// Current color mode (day, night, or discreet)
-    @Published var colorMode: ColorMode = .night
+    private static let themeDefaultsKey = "ClosedCaptioner.appTheme"
+    private static let colorModeDefaultsKey = "ClosedCaptioner.colorMode"
+
+    /// Day or night appearance
+    @Published var colorMode: ColorMode {
+        didSet {
+            UserDefaults.standard.set(colorMode.rawValue, forKey: Self.colorModeDefaultsKey)
+        }
+    }
+    /// User-selected palette. Grove is the default OfferLab look.
+    @Published var theme: AppTheme {
+        didSet {
+            UserDefaults.standard.set(theme.rawValue, forKey: Self.themeDefaultsKey)
+        }
+    }
     /// Whether the keyboard editing view is visible
     @Published var showKeyboard = false
     /// Whether Settings (History / Purchases) is visible
@@ -22,15 +35,30 @@ class AppStateViewModel: ObservableObject {
     /// Opacity value for the poof animation
     @Published var poofOpacity: Double = 1.0
 
-    /// Cycles through color modes: day -> night -> discreet -> day
-    func toggleColorMode() {
-        switch colorMode {
-        case .day:
-            colorMode = .night
-        case .night:
-            colorMode = .discreet
-        case .discreet:
-            colorMode = .day
+    /// Colors for the current theme + day/night mode.
+    var colors: ThemeColors {
+        theme.colors(for: colorMode)
+    }
+
+    /// Stealth stays dark so system chrome does not flip to light.
+    var preferredColorScheme: ColorScheme {
+        theme == .stealth ? .dark : colorMode.preferredColorScheme
+    }
+
+    init() {
+        let defaults = UserDefaults.standard
+        let savedMode = defaults.string(forKey: Self.colorModeDefaultsKey)
+        let savedTheme = defaults.string(forKey: Self.themeDefaultsKey)
+
+        // Old discreet lighting mode is now the Stealth theme.
+        if savedMode == "discreet" {
+            self.theme = .stealth
+            self.colorMode = .night
+            defaults.set(AppTheme.stealth.rawValue, forKey: Self.themeDefaultsKey)
+            defaults.set(ColorMode.night.rawValue, forKey: Self.colorModeDefaultsKey)
+        } else {
+            self.theme = AppTheme(rawValue: savedTheme ?? "") ?? .grove
+            self.colorMode = ColorMode(rawValue: savedMode ?? "") ?? .night
         }
     }
 

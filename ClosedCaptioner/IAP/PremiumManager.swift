@@ -49,8 +49,10 @@ final class PremiumManager: ObservableObject {
     }
 
     func loadProducts() async {
+        productsLoaded = false
         do {
-            let products = try await Product.products(for: IAPConfig.allProductIDs)
+            let requested = IAPConfig.allProductIDs
+            let products = try await Product.products(for: requested)
             var map: [String: Product] = [:]
             for product in products {
                 map[product.id] = product
@@ -59,11 +61,12 @@ final class PremiumManager: ObservableObject {
             productsLoaded = true
 
             if map.isEmpty {
-                print("[PremiumManager] StoreKit returned no products for \(IAPConfig.allProductIDs)")
-                errorMessage = "Purchase unavailable. The store could not load this item."
+                print("[PremiumManager] StoreKit returned no products for \(requested)")
+                errorMessage = Self.emptyCatalogMessage
             } else {
                 print("[PremiumManager] Loaded products: \(map.keys.sorted())")
-                if errorMessage?.localizedCaseInsensitiveContains("unavailable") == true {
+                if errorMessage == Self.emptyCatalogMessage
+                    || errorMessage?.localizedCaseInsensitiveContains("unavailable") == true {
                     errorMessage = nil
                 }
             }
@@ -102,7 +105,7 @@ final class PremiumManager: ObservableObject {
         }
 
         guard let product = productsByID[productID] else {
-            errorMessage = "Purchase unavailable. Try again later."
+            errorMessage = Self.emptyCatalogMessage
             return
         }
 
@@ -164,6 +167,11 @@ final class PremiumManager: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+
+    private static let emptyCatalogMessage = """
+    Purchase unavailable. Apple did not return “\(IAPConfig.removeAdsProductID)”. \
+    In App Store Connect the IAP must be Ready to Submit, and Paid Apps (Agreements, Tax, and Banking) must be Active.
+    """
 
     private func purchaseProduct(_ product: Product) async throws -> Product.PurchaseResult {
         if #available(iOS 17.0, *), let scene = Self.foregroundWindowScene {

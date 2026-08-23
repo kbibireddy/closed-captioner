@@ -28,7 +28,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // Background color based on mode
-            appState.colorMode.background
+            appState.colors.background
                 .ignoresSafeArea()
             
             // Flash transition
@@ -49,16 +49,18 @@ struct ContentView: View {
 
                 if appState.showPoofAnimation {
                     Text("✨Poof!!!✨")
-                        .font(.system(size: 60, weight: .black, design: .default))
-                        .foregroundColor(appState.colorMode.text)
+                        .font(AppType.display(56))
+                        .tracking(-1.8)
+                        .foregroundColor(appState.colors.text)
                         .opacity(appState.poofOpacity)
                 } else {
                     if !speechService.currentText.isEmpty {
-                        CaptionTextDisplay(text: speechService.currentText, colorMode: appState.colorMode)
+                        CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
                     } else if micController.isRecording {
-                        Text("🎤 Listening...")
-                            .font(.system(size: 45, weight: .black, design: .default))
-                            .foregroundColor(appState.colorMode.text.opacity(0.5))
+                        Text("Listening…")
+                            .font(AppType.display(40))
+                            .tracking(-1.2)
+                            .foregroundColor(appState.colors.muted)
                     }
                 }
 
@@ -106,6 +108,7 @@ struct ContentView: View {
                 .zIndex(10)
             }
         }
+        .preferredColorScheme(appState.preferredColorScheme)
         .onChange(of: micController.isRecording) { newValue in
             // When new recording starts, save current text to history
             if !previousRecordingState && newValue {

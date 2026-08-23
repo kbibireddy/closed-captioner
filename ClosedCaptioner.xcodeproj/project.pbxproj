@@ -18,6 +18,7 @@
 		EB6750092EAF4000000000 /* ControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750082EAF4000000000 /* ControlsView.swift */; };
 		EB67500A2EAF4000000000 /* CaptionTextDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */; };
 		EB67500C2EAF4000000000 /* ColorMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500D2EAF4000000000 /* ColorMode.swift */; };
+		EB6770502EAF7000000001 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6770512EAF7000000001 /* Theme.swift */; };
 		EB67500E2EAF4000000000 /* CaptionText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB67500F2EAF4000000000 /* CaptionText.swift */; };
 		EB6750102EAF4000000000 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750112EAF4000000000 /* ExportManager.swift */; };
 		EB6750122EAF4000000000 /* HistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750132EAF4000000000 /* HistoryManager.swift */; };
@@ -40,6 +41,7 @@
 		EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760082EAF5000000001 /* PremiumSheetView.swift */; };
 		EB6760402EAF6000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760412EAF6000000001 /* SettingsView.swift */; };
 		EB6760422EAF6000000001 /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760432EAF6000000001 /* PurchasesView.swift */; };
+		EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6770612EAF8000000001 /* GeneralSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +57,7 @@
 		EB6750082EAF4000000000 /* ControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlsView.swift; sourceTree = "<group>"; };
 		EB67500B2EAF4000000000 /* CaptionTextDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionTextDisplay.swift; sourceTree = "<group>"; };
 		EB67500D2EAF4000000000 /* ColorMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMode.swift; sourceTree = "<group>"; };
+		EB6770512EAF7000000001 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		EB67500F2EAF4000000000 /* CaptionText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionText.swift; sourceTree = "<group>"; };
 		EB6750112EAF4000000000 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
 		EB6750132EAF4000000000 /* HistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryManager.swift; sourceTree = "<group>"; };
@@ -77,6 +80,7 @@
 		EB6760082EAF5000000001 /* PremiumSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheetView.swift; sourceTree = "<group>"; };
 		EB6760412EAF6000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EB6760432EAF6000000001 /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
+		EB6770612EAF8000000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -198,6 +202,7 @@
 			children = (
 				EB67500F2EAF4000000000 /* CaptionText.swift */,
 				EB67500D2EAF4000000000 /* ColorMode.swift */,
+				EB6770512EAF7000000001 /* Theme.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -224,6 +229,7 @@
 				EB6750232EAF4004000000 /* HistoryView.swift */,
 				EB6760412EAF6000000001 /* SettingsView.swift */,
 				EB6760432EAF6000000001 /* PurchasesView.swift */,
+				EB6770612EAF8000000001 /* GeneralSettingsView.swift */,
 				EB6760082EAF5000000001 /* PremiumSheetView.swift */,
 			);
 			path = Views;
@@ -264,6 +270,11 @@
 				TargetAttributes = {
 					EB674F042EAF335500B5A10E = {
 						CreatedOnToolsVersion = 14.3.1;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -315,6 +326,7 @@
 				EB6750092EAF4000000000 /* ControlsView.swift in Sources */,
 				EB67500A2EAF4000000000 /* CaptionTextDisplay.swift in Sources */,
 				EB67500C2EAF4000000000 /* ColorMode.swift in Sources */,
+				EB6770502EAF7000000001 /* Theme.swift in Sources */,
 				EB67500E2EAF4000000000 /* CaptionText.swift in Sources */,
 				EB6750102EAF4000000000 /* ExportManager.swift in Sources */,
 				EB6750122EAF4000000000 /* HistoryManager.swift in Sources */,
@@ -335,6 +347,7 @@
 				EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */,
 				EB6760402EAF6000000001 /* SettingsView.swift in Sources */,
 				EB6760422EAF6000000001 /* PurchasesView.swift in Sources */,
+				EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

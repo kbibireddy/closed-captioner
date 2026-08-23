@@ -21,23 +21,23 @@ struct PurchasesView: View {
                         )
                     }
                 }
-                .padding()
+                .padding(20)
             }
 
             Button {
                 Task { await premiumManager.restorePurchases() }
             } label: {
                 Text("Restore Purchases")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(appState.colorMode.text.opacity(0.8))
+                    .font(AppType.ui(15, weight: .semibold))
+                    .foregroundColor(appState.colors.muted)
             }
             .disabled(premiumManager.purchaseInProgress)
             .padding(.bottom, 12)
 
             if let errorMessage = premiumManager.errorMessage {
                 Text(errorMessage)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.red)
+                    .font(AppType.ui(13, weight: .medium))
+                    .foregroundColor(appState.colors.danger)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
@@ -67,18 +67,20 @@ struct PurchaseProductRow: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: definition.systemImage)
-                    .font(.system(size: 28, weight: .regular))
-                    .foregroundColor(appState.colorMode.text)
-                    .frame(width: 36, height: 36)
+                    .font(AppType.ui(22, weight: .semibold))
+                    .foregroundColor(appState.colors.onAccentFill)
+                    .frame(width: 44, height: 44)
+                    .background(appState.colors.accentFill)
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(definition.title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(appState.colorMode.text)
+                        .font(AppType.ui(18, weight: .bold))
+                        .foregroundColor(appState.colors.text)
 
                     Text(definition.subtitle)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(appState.colorMode.text.opacity(0.7))
+                        .font(AppType.ui(14, weight: .medium))
+                        .foregroundColor(appState.colors.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -87,40 +89,40 @@ struct PurchaseProductRow: View {
 
             if isOwned {
                 Text("Owned")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.green)
+                    .font(AppType.ui(15, weight: .bold))
+                    .foregroundColor(appState.colors.accent)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             } else {
                 Button {
-                    Task { await premiumManager.purchase(definition) }
+                    Task {
+                        if premiumManager.product(for: definition) == nil {
+                            await premiumManager.loadProducts()
+                        } else {
+                            await premiumManager.purchase(definition)
+                        }
+                    }
                 } label: {
                     Group {
                         if isPurchasingThis || !premiumManager.productsLoaded {
                             ProgressView()
-                                .tint(appState.colorMode.background)
+                                .tint(appState.colors.onAccent)
                         } else if premiumManager.product(for: definition) == nil {
                             Text("Retry")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppType.ui(16, weight: .bold))
                         } else {
                             Text(premiumManager.displayPrice(for: definition))
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppType.ui(16, weight: .bold))
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(appState.colorMode.text)
-                    .foregroundColor(appState.colorMode.background)
-                    .cornerRadius(10)
+                    .padding(.vertical, 13)
+                    .background(appState.colors.accent)
+                    .foregroundColor(appState.colors.onAccent)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(premiumManager.purchaseInProgress || !premiumManager.productsLoaded)
             }
         }
-        .padding(16)
-        .background(appState.colorMode.buttonBackground)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(appState.colorMode.text.opacity(0.15), lineWidth: 1)
-        )
+        .appCard(for: appState.colors)
     }
 }

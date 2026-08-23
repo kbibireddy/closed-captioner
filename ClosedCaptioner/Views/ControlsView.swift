@@ -24,8 +24,8 @@ struct ControlsView: View {
     var body: some View {
         VStack(spacing: 0) {
             topBar
-                .padding(.vertical, 8)
-                .background(appState.colorMode.background)
+                .padding(.vertical, 10)
+                .background(appState.colors.background)
                 .layoutPriority(1)
 
             if showBanners {
@@ -43,8 +43,8 @@ struct ControlsView: View {
             }
 
             bottomBar
-                .padding(.vertical, 4)
-                .background(appState.colorMode.background)
+                .padding(.vertical, 8)
+                .background(appState.colors.background)
                 .layoutPriority(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,32 +52,20 @@ struct ControlsView: View {
     }
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button(action: {
                 appState.toggleSettings()
             }) {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 24, weight: .regular))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.ui(18, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                    .appChromeButton(for: appState.colors)
             }
-            .padding(.leading)
             .accessibilityLabel("Settings")
 
             Spacer()
-
-            Picker("Color Mode", selection: $appState.colorMode) {
-                ForEach(ColorMode.allCases, id: \.self) { mode in
-                    Image(systemName: mode.icon)
-                        .tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 120)
-            .tint(appState.colorMode.text.opacity(0.3))
-            .colorMultiply(appState.colorMode.text)
-            .padding(.trailing)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
     }
 
@@ -87,17 +75,36 @@ struct ControlsView: View {
                 appState.toggleKeyboard()
             }) {
                 Image(systemName: "keyboard")
-                    .font(.system(size: 24, weight: .regular))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.ui(18, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                    .appChromeButton(for: appState.colors)
             }
-            .padding(.leading)
+            .accessibilityLabel("Keyboard")
 
             Spacer()
 
-            Image(systemName: micController.isRecording ? "stop.fill" : "mic")
-                .font(.system(size: 28, weight: .regular))
-                .foregroundColor(micController.isRecording ? .red : appState.colorMode.text)
-                .padding()
+            Image(systemName: micController.isRecording ? "stop.fill" : "mic.fill")
+                .font(AppType.ui(22, weight: .bold))
+                .foregroundColor(
+                    micController.isRecording
+                        ? .white
+                        : appState.colors.onAccentFill
+                )
+                .frame(width: 64, height: 64)
+                .background(
+                    micController.isRecording
+                        ? appState.colors.danger
+                        : appState.colors.accentFill
+                )
+                .clipShape(Circle())
+                .overlay(
+                    Circle().stroke(appState.colors.line.opacity(micController.isRecording ? 0 : 1), lineWidth: 1)
+                )
+                .shadow(
+                    color: appState.colors.cardShadow,
+                    radius: micController.isRecording ? 0 : 12,
+                    y: 6
+                )
                 .contentShape(Circle())
                 .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { _ in
                 }, perform: {
@@ -107,17 +114,19 @@ struct ControlsView: View {
                         micController.startRecording()
                     }
                 })
+                .accessibilityLabel(micController.isRecording ? "Stop recording" : "Start recording")
 
             Spacer()
 
             Button(action: onClear) {
                 Image(systemName: "eraser.fill")
-                    .font(.system(size: 28, weight: .regular))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.ui(18, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                    .appChromeButton(for: appState.colors)
             }
-            .padding(.trailing)
+            .accessibilityLabel("Clear")
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
     }
 }

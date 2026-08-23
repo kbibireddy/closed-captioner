@@ -12,7 +12,7 @@ struct PremiumSheetView: View {
 
     var body: some View {
         ZStack {
-            appState.colorMode.background
+            appState.colors.background
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
@@ -27,23 +27,27 @@ struct PremiumSheetView: View {
                 Spacer()
 
                 Image(systemName: "sparkles")
-                    .font(.system(size: 48, weight: .regular))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.ui(40, weight: .semibold))
+                    .foregroundColor(appState.colors.onAccentFill)
+                    .frame(width: 72, height: 72)
+                    .background(appState.colors.accentFill)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                 Text("Remove Ads")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.display(36))
+                    .tracking(-1.4)
+                    .foregroundColor(appState.colors.text)
 
                 Text("Enjoy Closed Captioner without banner or interstitial ads. One-time purchase — yours forever.")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(appState.colorMode.text.opacity(0.7))
+                    .font(AppType.ui(16, weight: .medium))
+                    .foregroundColor(appState.colors.muted)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
 
                 if premiumManager.isPremium {
                     Text("Ads removed — thank you!")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.green)
+                        .font(AppType.ui(17, weight: .bold))
+                        .foregroundColor(appState.colors.accent)
                 } else {
                     Button {
                         Task { await premiumManager.purchaseRemoveAds() }
@@ -51,17 +55,17 @@ struct PremiumSheetView: View {
                         Group {
                             if premiumManager.purchaseInProgress {
                                 ProgressView()
-                                    .tint(appState.colorMode.background)
+                                    .tint(appState.colors.onAccent)
                             } else {
                                 Text("Remove Ads — \(premiumManager.removeAdsDisplayPrice)")
-                                    .font(.system(size: 17, weight: .semibold))
+                                    .font(AppType.ui(17, weight: .bold))
                             }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(appState.colorMode.text)
-                        .foregroundColor(appState.colorMode.background)
-                        .cornerRadius(10)
+                        .background(appState.colors.accent)
+                        .foregroundColor(appState.colors.onAccent)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     .disabled(premiumManager.purchaseInProgress)
                     .padding(.horizontal, 32)
@@ -69,15 +73,15 @@ struct PremiumSheetView: View {
                     Button("Restore Purchases") {
                         Task { await premiumManager.restorePurchases() }
                     }
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(appState.colorMode.text.opacity(0.8))
+                    .font(AppType.ui(15, weight: .semibold))
+                    .foregroundColor(appState.colors.muted)
                     .disabled(premiumManager.purchaseInProgress)
                 }
 
                 if let errorMessage = premiumManager.errorMessage {
                     Text(errorMessage)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.red)
+                        .font(AppType.ui(14, weight: .medium))
+                        .foregroundColor(appState.colors.danger)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }

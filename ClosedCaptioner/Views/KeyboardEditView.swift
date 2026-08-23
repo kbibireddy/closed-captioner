@@ -11,20 +11,20 @@ struct KeyboardEditView: View {
     @ObservedObject var appState: AppStateViewModel
     @Binding var text: String
     @FocusState private var isFocused: Bool
-    
+
     let onDone: () -> Void
-    
+
     var body: some View {
         ZStack {
             // Full screen background
-            appState.colorMode.background
+            appState.colors.background
                 .ignoresSafeArea()
-            
+
             VStack {
                 // Top section with Done button
                 HStack {
                     Spacer()
-                    
+
                     // Done button - top right corner (reusable component)
                     DoneButton(
                         appState: appState,
@@ -33,29 +33,30 @@ struct KeyboardEditView: View {
                     )
                     .padding()
                 }
-                
+
                 Spacer()
-                
+
                 // Text editor - centered
                 TextEditor(text: $text)
-                    .font(.system(size: 36, weight: .bold, design: .default))
-                    .foregroundColor(appState.colorMode.text)
+                    .font(AppType.display(32, weight: .medium))
+                    .foregroundColor(appState.colors.text)
                     .scrollContentBackground(.hidden)
                     .frame(height: 200)
-                    .padding()
-                    .background(appState.colorMode.buttonBackground)
-                    .cornerRadius(8)
+                    .padding(8)
+                    .background(appState.colors.card)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(appState.colorMode.text.opacity(0.3), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
                     )
+                    .shadow(color: appState.colors.cardShadow, radius: 18, y: 8)
                     .focused($isFocused)
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                     .onTapGesture {
                         // Ensure focus if tapped
                         isFocused = true
                     }
-                
+
                 Spacer()
             }
         }
@@ -70,4 +71,3 @@ struct KeyboardEditView: View {
         }
     }
 }
-

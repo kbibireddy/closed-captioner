@@ -6,6 +6,7 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
+    case general
     case history
     case purchases
 
@@ -13,6 +14,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .general: return "General"
         case .history: return "History"
         case .purchases: return "Purchases"
         }
@@ -20,8 +22,17 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .general: return "circle.lefthalf.filled"
         case .history: return "clock"
         case .purchases: return "cart"
+        }
+    }
+
+    var selectedSystemImage: String {
+        switch self {
+        case .general: return "circle.lefthalf.filled"
+        case .history: return "clock.fill"
+        case .purchases: return "cart.fill"
         }
     }
 }
@@ -33,7 +44,7 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            appState.colorMode.background
+            appState.colors.background
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -41,6 +52,8 @@ struct SettingsView: View {
 
                 Group {
                     switch selectedTab {
+                    case .general:
+                        GeneralSettingsView(appState: appState)
                     case .history:
                         HistoryContentView(
                             appState: appState,
@@ -58,10 +71,11 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .center) {
             Text("Settings")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(appState.colorMode.text)
+                .font(AppType.display(32))
+                .tracking(-1.2)
+                .foregroundColor(appState.colors.text)
 
             Spacer()
 
@@ -78,41 +92,52 @@ struct SettingsView: View {
                 }
             )
         }
-        .padding(.horizontal)
-        .padding(.top, 8)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
     }
 
-    /// Instagram-style bottom menu for History / Purchases.
     private var settingsTabBar: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(appState.colorMode.text.opacity(0.2))
-
-            HStack(spacing: 0) {
-                ForEach(SettingsTab.allCases) { tab in
-                    Button {
-                        selectedTab = tab
-                    } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: selectedTab == tab ? "\(tab.systemImage).fill" : tab.systemImage)
-                                .font(.system(size: 22, weight: .regular))
-                            Text(tab.title)
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundColor(
-                            selectedTab == tab
-                                ? appState.colorMode.text
-                                : appState.colorMode.text.opacity(0.45)
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+        HStack(spacing: 4) {
+            ForEach(SettingsTab.allCases) { tab in
+                Button {
+                    selectedTab = tab
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: selectedTab == tab ? tab.selectedSystemImage : tab.systemImage)
+                            .font(AppType.ui(16, weight: .bold))
+                        Text(tab.title)
+                            .font(AppType.ui(11, weight: .bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-                    .accessibilityLabel(tab.title)
+                    .foregroundColor(
+                        selectedTab == tab
+                            ? appState.colors.onAccent
+                            : appState.colors.muted
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        selectedTab == tab
+                            ? appState.colors.accent
+                            : Color.clear
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
             }
-            .padding(.horizontal, 8)
-            .background(appState.colorMode.background)
         }
+        .padding(5)
+        .background(appState.colors.buttonBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(appState.colors.line, lineWidth: 1)
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 }

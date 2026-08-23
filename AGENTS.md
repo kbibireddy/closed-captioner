@@ -18,6 +18,7 @@ This file is the entry point for AI coding agents working in this repository. Re
 | **Project overview, features, architecture** | [`README.md`](README.md) |
 | **Build or deploy to a physical iPhone** | [`docs/agent/device-deploy.md`](docs/agent/device-deploy.md) |
 | **Xcode Cloud / App Store CI** | [`docs/agent/xcode-cloud.md`](docs/agent/xcode-cloud.md) |
+| **In-app purchase / Remove Ads / Retry** | [`docs/agent/iap.md`](docs/agent/iap.md) |
 | **AdMob `app-ads.txt` / app verification** | [`docs/agent/app-ads-txt.md`](docs/agent/app-ads-txt.md) |
 | **Privacy policy content or App Store privacy copy** | [`PrivacyPolicy.md`](PrivacyPolicy.md) |
 
@@ -31,6 +32,7 @@ Detailed, task-specific guides for agents live here. Prefer these over improvisi
 |------|-------------|
 | [`docs/agent/device-deploy.md`](docs/agent/device-deploy.md) | Building, signing, installing, or launching on a connected iPhone; provisioning or Developer Mode errors |
 | [`docs/agent/xcode-cloud.md`](docs/agent/xcode-cloud.md) | Xcode Cloud workflow, direct App Store Connect uploads, release automation on push to `main` |
+| [`docs/agent/iap.md`](docs/agent/iap.md) | Remove Ads StoreKit empty catalog; Paid Apps agreement; product ID `ClosedCaptioner`; local `.storekit` vs TestFlight |
 | [`docs/agent/app-ads-txt.md`](docs/agent/app-ads-txt.md) | AdMob app-ads.txt crawl failures; GitHub Pages domain-root vs project path; Marketing URL requirements |
 
 When you solve a new repeatable workflow problem (especially deploy/CI/tooling), add or update a guide under `docs/agent/` and link it from this file.
