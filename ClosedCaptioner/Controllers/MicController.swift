@@ -16,6 +16,7 @@ class MicController: ObservableObject, MicControlProtocol {
     
     private let speechService: SpeechService
     private var recordingTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     
     /// Maximum recording time in seconds before auto-stop
     static let MAX_RECORDING_TIME_IN_SEC: TimeInterval = 15.0
@@ -25,19 +26,26 @@ class MicController: ObservableObject, MicControlProtocol {
     init(speechService: SpeechService) {
         self.speechService = speechService
         
-        // Observe speech service recording state
         speechService.$isRecording
             .assign(to: &$isRecording)
+
+        speechService.$isRecording
+            .filter { !$0 }
+            .sink { [weak self] _ in
+                self?.recordingTimer?.invalidate()
+                self?.recordingTimer = nil
+            }
+            .store(in: &cancellables)
     }
     
-    /// Starts recording audio and sets up an auto-stop timer
+    /// Starts recording audio and sets up an auto-stop timer.
+    /// The timer is armed only when speech recognition actually started.
     func startRecording() {
         guard !isRecording else { return }
         print("[MicController] Starting recording")
         speechService.startRecording()
-        isRecording = true
+        guard speechService.isRecording else { return }
         
-        // Start timer for auto-stop after MAX_RECORDING_TIME_IN_SEC
         recordingTimer?.invalidate()
         recordingTimer = Timer.scheduledTimer(withTimeInterval: Self.MAX_RECORDING_TIME_IN_SEC, repeats: false) { [weak self] _ in
             self?.stopRecording()
@@ -49,12 +57,10 @@ class MicController: ObservableObject, MicControlProtocol {
         guard isRecording else { return }
         print("[MicController] Stopping recording")
         
-        // Invalidate timer
         recordingTimer?.invalidate()
         recordingTimer = nil
         
         speechService.stopRecording()
-        // State will be updated via binding
     }
     
     /// Cleans up timer resources on deallocation
@@ -63,4 +69,3 @@ class MicController: ObservableObject, MicControlProtocol {
         recordingTimer = nil
     }
 }
-

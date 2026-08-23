@@ -26,6 +26,8 @@ class SpeechService: ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var inputNode: AVAudioInputNode?
+    private var hasInputTap = false
+    private var isStopping = false
     
     /// Tracks if current text is from speech recognition (affects emoji insertion logic)
     private var textIsFromSpeech: Bool = false
@@ -43,10 +45,7 @@ class SpeechService: ObservableObject {
     deinit {
         textStabilityTimer?.invalidate()
         textStabilityTimer = nil
-        recognitionTask?.finish()
-        recognitionRequest?.endAudio()
-        audioEngine.stop()
-        inputNode?.removeTap(onBus: 0)
+        teardownEngine()
     }
     
     /// Extracts base text without emojis for comparison purposes
@@ -66,7 +65,7 @@ class SpeechService: ObservableObject {
         }
     }
     
-    /// Starts speech recognition recording
+    /// Starts speech recognition recording. `isRecording` is true only after setup succeeds.
     func startRecording() {
         startRecognition()
     }
@@ -76,43 +75,46 @@ class SpeechService: ObservableObject {
         stopRecognition()
     }
     
-    /// Starts speech recognition by setting up the audio engine and recognition task
-    private func startRecognition() {
+    /// Starts speech recognition by setting up the audio engine and recognition task.
+    /// Rolls back the tap, engine, and request if any step fails so the UI never
+    /// shows Listening with a dead session.
+    @discardableResult
+    private func startRecognition() -> Bool {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
             print("[SpeechService] ERROR: Speech recognizer not available")
-            return
+            return false
         }
         
-        // Ensure we're not already recording
         if isRecording {
             print("[SpeechService] WARNING: Already recording, stopping first")
             stopRecognition()
         }
         
-        // Mark as recording immediately
-        isRecording = true
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
         
-        // Create new recognition request
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let recognitionRequest = recognitionRequest else { return }
-        
-        recognitionRequest.shouldReportPartialResults = true
-        
-        // Setup audio engine
         if audioEngine.isRunning {
             audioEngine.stop()
+        }
+        if hasInputTap {
             inputNode?.removeTap(onBus: 0)
+            hasInputTap = false
         }
         
-        inputNode = audioEngine.inputNode
-        guard let inputNode = inputNode else { return }
+        let input = audioEngine.inputNode
+        inputNode = input
+        let recordingFormat = input.outputFormat(forBus: 0)
+        guard recordingFormat.sampleRate > 0, recordingFormat.channelCount > 0 else {
+            print("[SpeechService] ERROR: Invalid input format")
+            abortFailedStart()
+            return false
+        }
         
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        
-        // Install tap on input node
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { [weak self] buffer, _ in
+        input.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
         }
+        hasInputTap = true
         
         audioEngine.prepare()
         
@@ -120,78 +122,90 @@ class SpeechService: ObservableObject {
             try audioEngine.start()
         } catch {
             print("[SpeechService] ERROR: Audio engine could not start: \(error)")
-            return
+            abortFailedStart()
+            return false
         }
         
-        // Mark that upcoming text is from speech
         textIsFromSpeech = true
+        isRecording = true
         
-        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self = self else { return }
-            
-            if let result = result {
-                DispatchQueue.main.async {
-                    let newRawText = result.bestTranscription.formattedString
-                    
-                    // Extract base text (without emojis) from both texts for comparison
-                    let currentBaseText = self.extractBaseText(from: self.currentText)
-                    let newBaseText = self.extractBaseText(from: newRawText)
-                    
-                    // Only update if base text actually changed
-                    if newBaseText != currentBaseText && !newBaseText.isEmpty {
-                        // Remove emojis from previous text if base text changed
-                        // This allows new emojis to be generated for the new text
-                        self.currentText = newRawText
-                        self.emojisAddedForCurrentText = false
-                        print("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
-                    } else if newBaseText == currentBaseText {
-                        // Base text didn't change, keep the current text with emojis (don't overwrite)
-                        print("[SpeechService] Text unchanged, keeping existing text with emojis")
-                    }
-                    // If newBaseText is empty, ignore this update
-                }
+        recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
+            self?.handleRecognitionUpdate(result: result, error: error)
+        }
+        return true
+    }
+    
+    private func handleRecognitionUpdate(result: SFSpeechRecognitionResult?, error: Error?) {
+        if let error {
+            print("[SpeechService] ERROR: Recognition error: \(error.localizedDescription)")
+        }
+        let shouldStop = result?.isFinal == true || error != nil
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if let result {
+                self.applyTranscription(result.bestTranscription.formattedString)
             }
-            
-            if let error = error {
-                print("[SpeechService] ERROR: Recognition error: \(error.localizedDescription)")
+            if shouldStop, self.isRecording {
+                self.stopRecognition()
             }
         }
     }
     
+    private func applyTranscription(_ newRawText: String) {
+        let currentBaseText = extractBaseText(from: currentText)
+        let newBaseText = extractBaseText(from: newRawText)
+        
+        if newBaseText != currentBaseText && !newBaseText.isEmpty {
+            currentText = newRawText
+            emojisAddedForCurrentText = false
+            print("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
+        } else if newBaseText == currentBaseText {
+            print("[SpeechService] Text unchanged, keeping existing text with emojis")
+        }
+    }
+    
+    /// Drops a half-started session without emoji side effects.
+    private func abortFailedStart() {
+        teardownEngine()
+        isRecording = false
+        textIsFromSpeech = false
+    }
+    
+    private func teardownEngine() {
+        recognitionRequest?.endAudio()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        if hasInputTap {
+            inputNode?.removeTap(onBus: 0)
+            hasInputTap = false
+        }
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        inputNode = nil
+    }
+    
     /// Stops speech recognition and cleans up resources
     private func stopRecognition() {
+        guard !isStopping else { return }
+        isStopping = true
+        defer { isStopping = false }
+        
         print("[SpeechService] Stopping speech recognition...")
         
-        // Cancel text stability timer
         textStabilityTimer?.invalidate()
         textStabilityTimer = nil
         
-        // Mark as not recording immediately
         isRecording = false
+        teardownEngine()
         
-        recognitionTask?.finish()
-        recognitionRequest?.endAudio()
-        
-        audioEngine.stop()
-        inputNode?.removeTap(onBus: 0)
-        
-        // Always add emojis if text came from speech recognition (final call)
-        // But only if emojis aren't already present
         if textIsFromSpeech && !currentText.isEmpty {
-            // Cancel any pending stability timer since we're stopping
-            textStabilityTimer?.invalidate()
-            textStabilityTimer = nil
-            
-            // Only add emojis if they're not already there (to avoid overwriting existing emojis)
             if !emojisAddedForCurrentText && !currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
                 addEmojisToText()
             }
             textIsFromSpeech = false
         }
-        
-        recognitionRequest = nil
-        recognitionTask = nil
-        inputNode = nil
         
         print("[SpeechService] Speech recognition stopped")
     }
@@ -277,4 +291,3 @@ class SpeechService: ObservableObject {
         }
     }
 }
-

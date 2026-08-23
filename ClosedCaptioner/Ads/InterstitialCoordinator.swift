@@ -22,18 +22,27 @@ final class InterstitialCoordinator {
     /// Show interstitial after closing history (best-effort if not yet loaded).
     func presentAfterHistoryClose() {
         guard !PremiumManager.shared.isPremium else { return }
+        if AdsBootstrap.requestTrackingIfNeeded() {
+            manager.load()
+            return
+        }
         presentIfPossible()
     }
 
     /// Count a mic stop; present interstitial every 3rd stop when allowed.
     func recordMicStop(allowPresent: Bool) {
         guard !PremiumManager.shared.isPremium else { return }
+        AdsBootstrap.requestTrackingIfNeeded()
         micStopCount += 1
         guard allowPresent, micStopCount % 3 == 0 else { return }
         presentIfPossible()
     }
 
     private func presentIfPossible() {
+        if AdsBootstrap.requestTrackingIfNeeded() {
+            manager.load()
+            return
+        }
         guard let root = UIViewController.adsRootViewController else {
             manager.load()
             return

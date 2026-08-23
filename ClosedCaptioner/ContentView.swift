@@ -142,11 +142,17 @@ struct ContentView: View {
             p2pInbox.relayEnabled = appState.relayMessages
             setupAudioSession()
             requestPermissions()
-            // Initialize previous recording state to track recording transitions
             previousRecordingState = micController.isRecording
+            updateShakeMonitoring()
         }
         .onChange(of: appState.relayMessages) { enabled in
             p2pInbox.relayEnabled = enabled
+        }
+        .onChange(of: appState.showSettings) { _ in
+            updateShakeMonitoring()
+        }
+        .onChange(of: appState.showKeyboard) { _ in
+            updateShakeMonitoring()
         }
         .onChange(of: scenePhase) { phase in
             switch phase {
@@ -157,18 +163,31 @@ struct ContentView: View {
             default:
                 break
             }
+            updateShakeMonitoring()
         }
         .onShake {
             handleShake()
         }
         .onDisappear {
-            // Save current text before app closes
             saveCurrentTextToHistory()
             speechService.stopRecording()
             p2pInbox.stopListening()
+            ShakeDetectionService.shared.stopMonitoring()
         }
     }
     
+    /// Accelerometer runs only in the foreground on the caption canvas.
+    private func updateShakeMonitoring() {
+        let shouldRun = scenePhase == .active
+            && !appState.showSettings
+            && !appState.showKeyboard
+        if shouldRun {
+            ShakeDetectionService.shared.startMonitoring()
+        } else {
+            ShakeDetectionService.shared.stopMonitoring()
+        }
+    }
+
     /// Sets up the audio session for recording
     private func setupAudioSession() {
         do {
