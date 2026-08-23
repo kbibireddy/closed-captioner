@@ -68,7 +68,7 @@ struct ControlsView: View {
                 appState.toggleSettings()
             }) {
                 Image(systemName: "gearshape")
-                    .font(AppType.ui(18, weight: .semibold))
+                    .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(appState.colors.text)
                     .appChromeButton(for: appState.colors)
             }
@@ -76,11 +76,19 @@ struct ControlsView: View {
 
             Spacer()
 
+            if p2pInbox.isListening {
+                P2PRadioStatsView(
+                    colors: appState.colors,
+                    peers: p2pInbox.connectedPeerCount,
+                    isRelaying: appState.relayMessages
+                )
+            }
+
             Button(action: {
                 p2pInbox.toggleListening()
             }) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(AppType.ui(18, weight: .semibold))
+                    .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(
                         p2pInbox.isListening
                             ? appState.colors.onAccentFill
@@ -116,7 +124,7 @@ struct ControlsView: View {
                 appState.toggleKeyboard()
             }) {
                 Image(systemName: "keyboard")
-                    .font(AppType.ui(18, weight: .semibold))
+                    .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(appState.colors.text)
                     .appChromeButton(for: appState.colors)
             }
@@ -125,7 +133,7 @@ struct ControlsView: View {
             Spacer()
 
             Image(systemName: micController.isRecording ? "stop.fill" : "mic.fill")
-                .font(AppType.ui(22, weight: .bold))
+                .font(AppType.display(22, weight: .bold))
                 .foregroundColor(
                     micController.isRecording
                         ? .white
@@ -161,7 +169,7 @@ struct ControlsView: View {
 
             Button(action: onClear) {
                 Image(systemName: "eraser.fill")
-                    .font(AppType.ui(18, weight: .semibold))
+                    .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(appState.colors.text)
                     .appChromeButton(for: appState.colors)
             }
@@ -169,5 +177,52 @@ struct ControlsView: View {
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// Compact nearby status to the left of the radio. Hidden when radio is off.
+/// Detailed counters live under Settings → KPIs.
+private struct P2PRadioStatsView: View {
+    let colors: ThemeColors
+    let peers: Int
+    let isRelaying: Bool
+
+    private var peopleLine: String {
+        switch peers {
+        case 0: return "Looking…"
+        case 1: return "1 person"
+        default: return "\(peers) people"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text("Nearby")
+                .font(AppType.display(10, weight: .bold))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .foregroundColor(colors.muted)
+            Text(peopleLine)
+                .font(AppType.display(13, weight: .semibold))
+                .foregroundColor(colors.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            if isRelaying {
+                Text("Relaying")
+                    .font(AppType.display(10, weight: .medium))
+                    .foregroundColor(colors.muted)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Nearby")
+        .accessibilityValue(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: String {
+        var summary = peopleLine
+        if isRelaying {
+            summary += ", relaying messages"
+        }
+        return summary
     }
 }

@@ -11,6 +11,7 @@ import UIKit
 #endif
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var speechService = SpeechService()
     @StateObject private var appState = AppStateViewModel()
     @StateObject private var micController: MicController
@@ -114,7 +115,8 @@ struct ContentView: View {
             if appState.showSettings {
                 SettingsView(
                     appState: appState,
-                    historyManager: historyManager
+                    historyManager: historyManager,
+                    p2pInbox: p2pInbox
                 )
                 .zIndex(10)
             }
@@ -137,10 +139,24 @@ struct ContentView: View {
             previousRecordingState = newValue
         }
         .onAppear {
+            p2pInbox.relayEnabled = appState.relayMessages
             setupAudioSession()
             requestPermissions()
             // Initialize previous recording state to track recording transitions
             previousRecordingState = micController.isRecording
+        }
+        .onChange(of: appState.relayMessages) { enabled in
+            p2pInbox.relayEnabled = enabled
+        }
+        .onChange(of: scenePhase) { phase in
+            switch phase {
+            case .active:
+                p2pInbox.rebuildSessionIfListening()
+            case .background:
+                p2pInbox.suspendSessionKeepingIntent()
+            default:
+                break
+            }
         }
         .onShake {
             handleShake()

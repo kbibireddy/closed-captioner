@@ -2,22 +2,17 @@
 //  Theme.swift
 //  ClosedCaptioner
 //
-//  Visual language: editorial serif headlines, rounded UI, and selectable
-//  palettes. Day / Night control light vs dark; AppTheme tints them.
+//  Visual language: New York serif for all type, and selectable palettes.
+//  Day / Night control light vs dark; AppTheme tints them.
 //  Stealth is a low-contrast theme, not a third lighting mode.
 //
 
 import SwiftUI
 
 enum AppType {
-    /// Fraunces-style display type via New York.
+    /// New York serif — used for all in-app type.
     static func display(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
         .system(size: size, weight: weight, design: .serif)
-    }
-
-    /// Source Sans-style UI type via SF Rounded.
-    static func ui(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        .system(size: size, weight: weight, design: .rounded)
     }
 }
 

@@ -25,9 +25,9 @@ struct HistoryContentView: View {
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "trash")
-                                .font(AppType.ui(12, weight: .bold))
+                                .font(AppType.display(11, weight: .bold))
                             Text("Delete All")
-                                .font(AppType.ui(13, weight: .bold))
+                                .font(AppType.display(12, weight: .bold))
                         }
                         .foregroundColor(appState.colors.danger)
                         .padding(.horizontal, 14)
@@ -48,7 +48,7 @@ struct HistoryContentView: View {
             if historyManager.sortedCaptions.isEmpty {
                 Spacer()
                 Text("No history yet")
-                    .font(AppType.display(28))
+                    .font(AppType.display(22))
                     .tracking(-0.8)
                     .foregroundColor(appState.colors.muted)
                 Spacer()
@@ -127,16 +127,17 @@ struct HistoryRow: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Self.dateFormatter.string(from: caption.timestamp))
-                    .font(AppType.ui(13, weight: .bold))
+                    .font(AppType.display(11, weight: .bold))
                     .foregroundColor(appState.colors.text)
                 Text(Self.timeFormatter.string(from: caption.timestamp))
-                    .font(AppType.ui(12, weight: .medium))
+                    .font(AppType.display(10, weight: .medium))
                     .foregroundColor(appState.colors.muted)
             }
-            .frame(width: 120, alignment: .leading)
+            .frame(width: 110, alignment: .leading)
 
             Text(caption.text)
-                .font(AppType.ui(17, weight: .medium))
+                .font(AppType.display(16))
+                .tracking(-0.4)
                 .foregroundColor(appState.colors.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .multilineTextAlignment(.leading)
@@ -147,7 +148,7 @@ struct HistoryRow: View {
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(AppType.ui(15, weight: .semibold))
+                    .font(AppType.display(13, weight: .semibold))
                     .foregroundColor(appState.colors.danger)
                     .frame(width: 30, height: 30)
             }

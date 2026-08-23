@@ -12,6 +12,7 @@ class AppStateViewModel: ObservableObject {
     private static let themeDefaultsKey = "ClosedCaptioner.appTheme"
     private static let colorModeDefaultsKey = "ClosedCaptioner.colorMode"
     private static let displayNameDefaultsKey = "ClosedCaptioner.displayName"
+    private static let relayMessagesDefaultsKey = "ClosedCaptioner.relayMessages"
 
     /// Day or night appearance
     @Published var colorMode: ColorMode {
@@ -29,6 +30,12 @@ class AppStateViewModel: ObservableObject {
     @Published var displayName: String {
         didSet {
             UserDefaults.standard.set(displayName, forKey: Self.displayNameDefaultsKey)
+        }
+    }
+    /// When radio is on, forward nearby captions to other neighbors. Default off.
+    @Published var relayMessages: Bool {
+        didSet {
+            UserDefaults.standard.set(relayMessages, forKey: Self.relayMessagesDefaultsKey)
         }
     }
     /// Whether the keyboard editing view is visible
@@ -74,6 +81,7 @@ class AppStateViewModel: ObservableObject {
         } else {
             self.displayName = Self.hostDisplayName()
         }
+        self.relayMessages = defaults.bool(forKey: Self.relayMessagesDefaultsKey)
     }
 
     /// Device host name used until the user picks a display name.

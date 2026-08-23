@@ -27,7 +27,7 @@ struct PremiumSheetView: View {
                 Spacer()
 
                 Image(systemName: "sparkles")
-                    .font(AppType.ui(40, weight: .semibold))
+                    .font(AppType.display(40, weight: .semibold))
                     .foregroundColor(appState.colors.onAccentFill)
                     .frame(width: 72, height: 72)
                     .background(appState.colors.accentFill)
@@ -39,14 +39,14 @@ struct PremiumSheetView: View {
                     .foregroundColor(appState.colors.text)
 
                 Text("Enjoy Closed Captioner without banner or interstitial ads. One-time purchase — yours forever.")
-                    .font(AppType.ui(16, weight: .medium))
+                    .font(AppType.display(16, weight: .medium))
                     .foregroundColor(appState.colors.muted)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
 
                 if premiumManager.isPremium {
                     Text("Ads removed — thank you!")
-                        .font(AppType.ui(17, weight: .bold))
+                        .font(AppType.display(17, weight: .bold))
                         .foregroundColor(appState.colors.accent)
                 } else {
                     Button {
@@ -58,7 +58,7 @@ struct PremiumSheetView: View {
                                     .tint(appState.colors.onAccent)
                             } else {
                                 Text("Remove Ads — \(premiumManager.removeAdsDisplayPrice)")
-                                    .font(AppType.ui(17, weight: .bold))
+                                    .font(AppType.display(17, weight: .bold))
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -73,14 +73,14 @@ struct PremiumSheetView: View {
                     Button("Restore Purchases") {
                         Task { await premiumManager.restorePurchases() }
                     }
-                    .font(AppType.ui(15, weight: .semibold))
+                    .font(AppType.display(15, weight: .semibold))
                     .foregroundColor(appState.colors.muted)
                     .disabled(premiumManager.purchaseInProgress)
                 }
 
                 if let errorMessage = premiumManager.errorMessage {
                     Text(errorMessage)
-                        .font(AppType.ui(14, weight: .medium))
+                        .font(AppType.display(14, weight: .medium))
                         .foregroundColor(appState.colors.danger)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)

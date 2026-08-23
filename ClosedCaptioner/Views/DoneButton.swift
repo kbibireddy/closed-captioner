@@ -15,10 +15,10 @@ struct DoneButton: View {
     var body: some View {
         Button(action: onAction) {
             Text(text)
-                .font(AppType.ui(15, weight: .bold))
+                .font(AppType.display(13, weight: .bold))
                 .foregroundColor(appState.colors.onAccent)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
                 .background(appState.colors.accent)
                 .clipShape(Capsule())
         }

@@ -28,7 +28,7 @@ struct PurchasesView: View {
                 Task { await premiumManager.restorePurchases() }
             } label: {
                 Text("Restore Purchases")
-                    .font(AppType.ui(15, weight: .semibold))
+                    .font(AppType.display(13, weight: .semibold))
                     .foregroundColor(appState.colors.muted)
             }
             .disabled(premiumManager.purchaseInProgress)
@@ -36,7 +36,7 @@ struct PurchasesView: View {
 
             if let errorMessage = premiumManager.errorMessage {
                 Text(errorMessage)
-                    .font(AppType.ui(13, weight: .medium))
+                    .font(AppType.display(13, weight: .medium))
                     .foregroundColor(appState.colors.danger)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
@@ -67,7 +67,7 @@ struct PurchaseProductRow: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: definition.systemImage)
-                    .font(AppType.ui(22, weight: .semibold))
+                    .font(AppType.display(22, weight: .semibold))
                     .foregroundColor(appState.colors.onAccentFill)
                     .frame(width: 44, height: 44)
                     .background(appState.colors.accentFill)
@@ -75,11 +75,11 @@ struct PurchaseProductRow: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(definition.title)
-                        .font(AppType.ui(18, weight: .bold))
+                        .font(AppType.display(16, weight: .bold))
                         .foregroundColor(appState.colors.text)
 
                     Text(definition.subtitle)
-                        .font(AppType.ui(14, weight: .medium))
+                        .font(AppType.display(14, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -89,7 +89,7 @@ struct PurchaseProductRow: View {
 
             if isOwned {
                 Text("Owned")
-                    .font(AppType.ui(15, weight: .bold))
+                    .font(AppType.display(13, weight: .bold))
                     .foregroundColor(appState.colors.accent)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             } else {
@@ -108,10 +108,10 @@ struct PurchaseProductRow: View {
                                 .tint(appState.colors.onAccent)
                         } else if premiumManager.product(for: definition) == nil {
                             Text("Retry")
-                                .font(AppType.ui(16, weight: .bold))
+                                .font(AppType.display(14, weight: .bold))
                         } else {
                             Text(premiumManager.displayPrice(for: definition))
-                                .font(AppType.ui(16, weight: .bold))
+                                .font(AppType.display(14, weight: .bold))
                         }
                     }
                     .frame(maxWidth: .infinity)

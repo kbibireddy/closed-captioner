@@ -12,6 +12,7 @@ struct GeneralSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 userInfoSection
+                nearbySection
                 appearanceSection
                 themeSection
             }
@@ -26,22 +27,22 @@ struct GeneralSettingsView: View {
     private var userInfoSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("User info")
-                .font(AppType.display(26))
+                .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
             Text("This name is shown on nearby messages you send. It starts as this device’s host name.")
-                .font(AppType.ui(14, weight: .medium))
+                .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Display name")
-                    .font(AppType.ui(13, weight: .bold))
+                    .font(AppType.display(13, weight: .bold))
                     .foregroundColor(appState.colors.muted)
 
                 TextField(AppStateViewModel.hostDisplayName(), text: $appState.displayName)
-                    .font(AppType.ui(17, weight: .semibold))
+                    .font(AppType.display(15, weight: .semibold))
                     .foregroundColor(appState.colors.text)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
@@ -64,15 +65,43 @@ struct GeneralSettingsView: View {
         }
     }
 
+    private var nearbySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Nearby")
+                .font(AppType.display(22))
+                .tracking(-0.8)
+                .foregroundColor(appState.colors.text)
+
+            Text("When radio is on, this phone can pass a caption to the next person nearby. Delivery isn’t guaranteed.")
+                .font(AppType.display(14, weight: .medium))
+                .foregroundColor(appState.colors.muted)
+                .padding(.bottom, 4)
+
+            Toggle(isOn: $appState.relayMessages) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Relay messages")
+                        .font(AppType.display(15, weight: .semibold))
+                        .foregroundColor(appState.colors.text)
+                    Text("Off by default. Uses extra Bluetooth or Wi‑Fi only while radio is on.")
+                        .font(AppType.display(13, weight: .medium))
+                        .foregroundColor(appState.colors.muted)
+                }
+            }
+            .tint(appState.colors.accent)
+            .accessibilityLabel("Relay messages")
+            .accessibilityHint("Forwards nearby captions so they can reach people farther away. Radio must also be on.")
+        }
+    }
+
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Appearance")
-                .font(AppType.display(26))
+                .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
             Text("Day or night. Works with every theme.")
-                .font(AppType.ui(14, weight: .medium))
+                .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
 
@@ -85,9 +114,9 @@ struct GeneralSettingsView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: mode.icon)
-                                .font(AppType.ui(14, weight: .bold))
+                                .font(AppType.display(14, weight: .bold))
                             Text(mode.title)
-                                .font(AppType.ui(15, weight: .bold))
+                                .font(AppType.display(13, weight: .bold))
                         }
                         .foregroundColor(
                             appState.colorMode == mode
@@ -120,12 +149,12 @@ struct GeneralSettingsView: View {
     private var themeSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Theme")
-                .font(AppType.display(26))
+                .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
             Text("Grove is the default. Stealth keeps captions hard to read from a distance.")
-                .font(AppType.ui(14, weight: .medium))
+                .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
 
@@ -159,11 +188,11 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text(theme.title)
-                        .font(AppType.ui(17, weight: .bold))
+                        .font(AppType.display(15, weight: .bold))
                         .foregroundColor(appState.colors.text)
                     if theme == .grove {
                         Text("Default")
-                            .font(AppType.ui(11, weight: .bold))
+                            .font(AppType.display(11, weight: .bold))
                             .foregroundColor(appState.colors.onAccent)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -172,14 +201,14 @@ struct GeneralSettingsView: View {
                     }
                 }
                 Text(theme.subtitle)
-                    .font(AppType.ui(13, weight: .medium))
+                    .font(AppType.display(13, weight: .medium))
                     .foregroundColor(appState.colors.muted)
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                .font(AppType.ui(20, weight: .semibold))
+                .font(AppType.display(20, weight: .semibold))
                 .foregroundColor(selected ? appState.colors.accent : appState.colors.muted)
         }
         .padding(14)

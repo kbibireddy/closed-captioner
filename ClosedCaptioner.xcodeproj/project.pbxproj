@@ -44,6 +44,7 @@
 		EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6770612EAF8000000001 /* GeneralSettingsView.swift */; };
 		EB6780702EAF9000000001 /* P2PConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780712EAF9000000001 /* P2PConfig.swift */; };
 		EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780732EAF9000000001 /* P2PInboxService.swift */; };
+		EB6780902EAFB100000001 /* AppPerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780912EAFB100000001 /* AppPerformanceMonitor.swift */; };
 		EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6780812EAFA000000001 /* P2PMessageLogView.swift */; };
 /* End PBXBuildFile section */
 
@@ -86,6 +87,7 @@
 		EB6770612EAF8000000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		EB6780712EAF9000000001 /* P2PConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PConfig.swift; sourceTree = "<group>"; };
 		EB6780732EAF9000000001 /* P2PInboxService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PInboxService.swift; sourceTree = "<group>"; };
+		EB6780912EAFB100000001 /* AppPerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPerformanceMonitor.swift; sourceTree = "<group>"; };
 		EB6780812EAFA000000001 /* P2PMessageLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PMessageLogView.swift; sourceTree = "<group>"; };
 		EB6760092EAF5000000001 /* ClosedCaptioner.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClosedCaptioner.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -223,6 +225,7 @@
 				EB6750292EAF4007000000 /* ShakeDetectionService.swift */,
 				EB6780712EAF9000000001 /* P2PConfig.swift */,
 				EB6780732EAF9000000001 /* P2PInboxService.swift */,
+				EB6780912EAFB100000001 /* AppPerformanceMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -359,6 +362,7 @@
 				EB6770602EAF8000000001 /* GeneralSettingsView.swift in Sources */,
 				EB6780702EAF9000000001 /* P2PConfig.swift in Sources */,
 				EB6780722EAF9000000001 /* P2PInboxService.swift in Sources */,
+				EB6780902EAFB100000001 /* AppPerformanceMonitor.swift in Sources */,
 				EB6780802EAFA000000001 /* P2PMessageLogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

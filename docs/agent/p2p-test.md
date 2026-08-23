@@ -9,6 +9,8 @@ Nearby messaging. Radio on: iOS browses and advertises. Swipe up on a caption to
 | Piece | Behavior |
 |--------|----------|
 | Radio icon, top right | Off by default. On = browse + advertise Multipeer `cc-p2p`. |
+| Radio status (left of icon) | While on: labeled **Nearby**, then `Looking…` or `N people`. If **Relay messages** is on, a **Relaying** line. Hidden when radio is off. Detailed counters are in Settings → KPIs. |
+| Relay messages | Settings → General → Nearby. **Off by default.** Radio must be on. Forwards payloads that have an `id` (TTL 4). v1 / no-id packets are displayed only, not forwarded. No catch-up, no background mesh. |
 | Live log strip | Directly **above the bottom banner**. Transparent. New York serif (`AppType.display`) like captions / Settings titles. Multi-line until 180 characters. Relative age (`1s ago`). Height hugs one row, then grows to 50pt **+ 75%** and scrolls. Top of a full window fades to clear; latest row stays at the bottom. |
 | Log row | `[display name] message… HH:mm:ss` — one line, message truncated. Newest at the bottom. Max **200** rows; oldest is dropped. |
 | Display name | Settings → General → User info. Defaults to device host name; user can change it. |
@@ -21,11 +23,12 @@ Radio **on** browses and advertises. Two phones with radio on can see each other
 
 1. Install Closed Captioner on a physical iPhone (see [`device-deploy.md`](device-deploy.md)).
 2. On the Mac: `cd tools/p2p-radio && swift run p2p-radio` (no default message).
-3. On the phone: open the app, tap the radio (top right) on, allow Local Network.
-4. Type a line in the Mac terminal → a **new row is appended** in the log, not in the center caption.
+3. On the phone: open the app, tap the radio (top right) on, allow Local Network. **Nearby** / **Looking…** appears left of the radio.
+4. Type a line in the Mac terminal → a **new row is appended** in the log, not in the center caption. After the session connects, the status should read **1 person**.
 5. Put text on the main screen (mic or keyboard). Swipe **up** on the caption.
 6. Caption flies off the top, is saved to History, and a row with **your display name** appears in the log only after the send succeeds. Mac terminal should print the same text.
 7. Turn the radio off → log strip hides; center captions are unchanged. Eraser does not clear the log.
+8. Relay (optional): Settings → General → Nearby → **Relay messages**. While radio is on, the HUD shows **Relaying**. A third phone beyond 1 hop should see the caption only if the middle phone has relay on. Backgrounding a phone drops its session; returning to the app rebuilds without resetting KPIs. Detailed forwarded / duplicate counts stay in Settings → KPIs.
 
 ## Do not break
 

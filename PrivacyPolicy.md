@@ -59,6 +59,7 @@ App settings and preferences stay on your device. We do **not** operate a separa
 If you turn **on** the radio control, the App may receive short text messages from other Closed Captioner peers (or a local test tool) over **Bluetooth or the local network** using Apple Multipeer Connectivity. This is **off by default**.
 - Messages stay on the receiving device for display. We do **not** send them to our servers or to AdMob.
 - This does **not** use cellular data as a transport. If nobody nearby is emitting, nothing is received.
+- Optional **Relay messages** (Settings → General → Nearby, **off by default**) may forward a message you receive to other nearby peers. Delivery is not guaranteed. Relay does nothing unless radio is also on.
 - You can turn the radio off at any time. iOS Local Network (and Bluetooth) permission may be requested the first time you enable it.
 
 ## 3. How We Collect Information
@@ -67,7 +68,7 @@ If you turn **on** the radio control, the App may receive short text messages fr
 - **Automatically via permissions:** Microphone, Speech Recognition, and (for personalized ads) App Tracking Transparency
 - **Through third parties:** Apple (Speech Recognition, StoreKit) and Google AdMob (advertising)
 - **On device:** Motion sensors for shake detection; local caption/history storage
-- **Nearby (optional):** Local network or Bluetooth when you enable the radio, to receive caption messages from nearby Closed Captioner peers
+- **Nearby (optional):** Local network or Bluetooth when you enable the radio, to receive caption messages from nearby Closed Captioner peers. Optional relay (off by default) may forward a message to other nearby peers; it never leaves the local radios.
 
 You can revoke microphone, speech, and tracking permissions in iOS Settings at any time.
 
