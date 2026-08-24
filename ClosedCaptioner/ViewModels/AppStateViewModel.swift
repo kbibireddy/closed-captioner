@@ -15,6 +15,7 @@ class AppStateViewModel: ObservableObject {
     private static let displayNameDefaultsKey = "ClosedCaptioner.displayName"
     private static let relayMessagesDefaultsKey = "ClosedCaptioner.relayMessages"
     private static let radioKeepAliveDefaultsKey = "ClosedCaptioner.radioKeepAlive"
+    private static let emojiDetectionDefaultsKey = "ClosedCaptioner.emojiDetection"
 
     /// Day or night appearance
     @Published var colorMode: ColorMode {
@@ -53,12 +54,16 @@ class AppStateViewModel: ObservableObject {
             UserDefaults.standard.set(radioKeepAlive.rawValue, forKey: Self.radioKeepAliveDefaultsKey)
         }
     }
+    /// Append suggested emojis after speech text stabilizes. Default off (experimental).
+    @Published var emojiDetectionEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(emojiDetectionEnabled, forKey: Self.emojiDetectionDefaultsKey)
+        }
+    }
     /// Whether the keyboard editing view is visible
     @Published var showKeyboard = false
     /// Whether Settings (History / Purchases) is visible
     @Published var showSettings = false
-    /// Whether the flash animation is active
-    @Published var showFlash = false
     /// Whether the poof animation is active
     @Published var showPoofAnimation = false
     /// Opacity value for the poof animation
@@ -114,6 +119,7 @@ class AppStateViewModel: ObservableObject {
         }
         let savedKeepAlive = defaults.string(forKey: Self.radioKeepAliveDefaultsKey)
         self.radioKeepAlive = RadioKeepAlive(rawValue: savedKeepAlive ?? "") ?? .thirtyMinutes
+        self.emojiDetectionEnabled = defaults.bool(forKey: Self.emojiDetectionDefaultsKey)
     }
 
     /// Device host name used until the user picks a display name.
@@ -126,14 +132,9 @@ class AppStateViewModel: ObservableObject {
         displayName = P2PConfig.normalizedName(displayName) ?? Self.hostDisplayName()
     }
 
-    /// Clears the screen with a flash animation followed by a poof animation
+    /// Clears the screen with a short poof animation (no flash overlay).
     func clearScreen() {
-        showFlash = true
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            self.showFlash = false
-            self.startPoofAnimation()
-        }
+        startPoofAnimation()
     }
 
     /// Starts the poof animation that fades out over 0.8 seconds

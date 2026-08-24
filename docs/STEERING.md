@@ -26,7 +26,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 ### Core captioning
 - **Mic** (long-press): English (`en-US`) speech recognition via `Speech` + `AVFoundation`.
 - Auto-stops after **15 seconds** (`MicController.MAX_RECORDING_TIME_IN_SEC`).
-- **Emojis** added after text stabilizes (~2.5s) via `EmojiService` / NaturalLanguage.
+- **Emojis** (Preferences → Captions): off by default; experimental. When on, added after speech text stabilizes (~2.5s) via `EmojiService` / NaturalLanguage.
 - **Keyboard overlay** to edit current caption.
 - **Eraser**: flash + “Poof” animation; saves prior text to history when applicable.
 - **Shake** (mic off, main screen): replaces text with a pickup line; 5s cooldown.
@@ -39,18 +39,18 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 ### Settings (gear, full-screen overlay)
 | Tab | Purpose |
 |-----|---------|
-| **Preferences** | Display name, nearby relay toggle, Day/Night, theme picker |
+| **Preferences** | Display name, emoji detection (experimental), Huddle relay, Day/Night, theme, font |
 | **KPIs** | App vs phone CPU/memory/threads; 15 min @ 3s for live series, 1 h @ 30s for slow counters; Message Log can be cleared |
 | **History** | Saved captions with timestamps; tap to view; delete |
 | **Logs** | Full P2P message log (newest at bottom) |
 | **Purchases** | Remove Ads IAP + Restore |
 
-### Nearby P2P radio (Multipeer `cc-p2p`)
-- **Radio icon** (top right): off by default; on = browse + advertise on local network. Stays on in the background until you turn it off, force-quit, or the auto-off timer (General, default 30 minutes). A local iOS notification reminds you the mesh is still on.
-- **Swipe up** on center caption to broadcast (saved to history; fly-off animation).
+### Huddle (nearby P2P) (Multipeer `cc-p2p`)
+- **Huddle icon** (top right): off by default; on = browse + advertise on local network. Stays on in the background until you turn it off, force-quit, or the auto-off timer (General, default 30 minutes). At most one local iOS notification per launch, and only after lock or a full minute off-screen.
+- **Flick up** (±60° of vertical) anywhere on the caption canvas to broadcast (finger-follow, velocity fly-off, then **Sent!**). Wrong direction → **Try again** + ↑, caption returns.
 - Incoming messages go to the **log strip** above the bottom banner — **never** the center caption.
-- **Relay messages** (Preferences): forward with TTL 4; **on by default**. Works while radio is on, including in the background when iOS has not suspended the process.
-- **Keep radio nearby** (Preferences): 30 min / 1 h / 4 h / 8 h / until off.
+- **Relay messages** (Preferences): forward with TTL 4; **on by default**. Works while Huddle is on, including in the background when iOS has not suspended the process.
+- **Keep Huddle on** (Preferences): 30 min / 1 h / 4 h / 8 h / until off.
 - Mac test peer: `tools/p2p-radio` — see [`docs/agent/p2p-test.md`](agent/p2p-test.md).
 
 ### Monetization
@@ -74,7 +74,7 @@ ContentView
 ├── MicController          ← 15s timer, bridges SpeechService
 ├── AppStateViewModel      ← theme, day/night, overlays, display name, relay flag
 ├── HistoryManager         ← UserDefaults persistence
-├── P2PInboxService        ← Multipeer radio + log + KPI counters
+├── P2PInboxService        ← Huddle (Multipeer) + log + KPI counters
 ├── PremiumManager         ← StoreKit 2, entitlements
 └── ControlsView           ← chrome, banners, P2P HUD, mic/keyboard/eraser
 
@@ -107,11 +107,11 @@ Theme, color mode, display name, relay flag, caption history, P2P KPI counters (
 | Location | Action |
 |----------|--------|
 | Top left | Settings |
-| Top right | P2P radio + status (`Tap to join` off; on: ↓/↑ B/s from 30s window) |
+| Top right | Huddle + status (`Tap to join` off; on: ↓/↑ B/s from 30s window) |
 | Bottom left | Keyboard |
 | Bottom center | Mic (long-press start/stop) |
 | Bottom right | Eraser |
-| Center caption | Swipe **up** to send nearby (radio on) |
+| Center caption | Flick **up** (±60°) anywhere on canvas to send (Huddle on); **Sent!** / **Try again** |
 
 Day/Night and theme are **not** on the main screen — Settings → General only.
 

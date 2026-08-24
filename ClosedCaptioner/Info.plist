@@ -5,7 +5,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Closed Captioner uses the local network to receive nearby caption messages when the radio is on. Nothing is sent over the internet.</string>
+	<string>Closed Captioner uses the local network to receive nearby caption messages when Huddle is on. Nothing is sent over the internet.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_cc-p2p._tcp</string>

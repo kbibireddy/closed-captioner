@@ -48,7 +48,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 struct SettingsView: View {
     @ObservedObject var appState: AppStateViewModel
     @ObservedObject var historyManager: HistoryManager
-    @ObservedObject var p2pInbox: P2PInboxService
+    let p2pInbox: P2PInboxService
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
@@ -158,8 +158,19 @@ struct SettingsView: View {
 
 struct KPISettingsView: View {
     @ObservedObject var appState: AppStateViewModel
-    @ObservedObject var p2pInbox: P2PInboxService
+    let p2pInbox: P2PInboxService
+    @ObservedObject private var chrome: P2PRadioChrome
+    @ObservedObject private var metrics: P2PRadioMetrics
+    @ObservedObject private var log: P2PMessageLog
     @ObservedObject private var performance = AppPerformanceMonitor.shared
+
+    init(appState: AppStateViewModel, p2pInbox: P2PInboxService) {
+        self.appState = appState
+        self.p2pInbox = p2pInbox
+        _chrome = ObservedObject(wrappedValue: p2pInbox.chrome)
+        _metrics = ObservedObject(wrappedValue: p2pInbox.metrics)
+        _log = ObservedObject(wrappedValue: p2pInbox.log)
+    }
 
     private let cardColumns = [
         GridItem(.flexible(), spacing: 10),
@@ -258,14 +269,14 @@ struct KPISettingsView: View {
                     kpiRow("App uptime", performance.formattedUptime)
                 }
 
-                kpiSection("Radio", table: {
-                    kpiRow("Status", p2pInbox.isListening ? "On" : "Off")
-                    kpiRow("Relay", (p2pInbox.isListening && appState.relayMessages) ? "On" : "Off")
+                kpiSection("Huddle", table: {
+                    kpiRow("Status", chrome.isListening ? "On" : "Off")
+                    kpiRow("Relay", (chrome.isListening && appState.relayMessages) ? "On" : "Off")
                 }, cards: {
                     KPIMetricCard(
                         title: "Peers",
-                        valueText: "\(p2pInbox.connectedPeerCount)",
-                        samples: p2pInbox.peerHistory,
+                        valueText: "\(chrome.connectedPeerCount)",
+                        samples: metrics.peerHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -273,8 +284,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Connects",
-                        valueText: "\(p2pInbox.connectCount)",
-                        samples: p2pInbox.connectHistory,
+                        valueText: "\(metrics.connectCount)",
+                        samples: metrics.connectHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -282,8 +293,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Disconnects",
-                        valueText: "\(p2pInbox.disconnectCount)",
-                        samples: p2pInbox.disconnectHistory,
+                        valueText: "\(metrics.disconnectCount)",
+                        samples: metrics.disconnectHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -291,8 +302,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Invite timeouts",
-                        valueText: "\(p2pInbox.inviteTimeouts)",
-                        samples: p2pInbox.inviteTimeoutHistory,
+                        valueText: "\(metrics.inviteTimeouts)",
+                        samples: metrics.inviteTimeoutHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.slowHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -303,8 +314,8 @@ struct KPISettingsView: View {
                 kpiCardSection("Traffic", cards: {
                     KPIMetricCard(
                         title: "Messages sent",
-                        valueText: "\(p2pInbox.messagesSent)",
-                        samples: p2pInbox.messagesSentHistory,
+                        valueText: "\(metrics.messagesSent)",
+                        samples: metrics.messagesSentHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -312,8 +323,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Messages received",
-                        valueText: "\(p2pInbox.messagesReceived)",
-                        samples: p2pInbox.messagesReceivedHistory,
+                        valueText: "\(metrics.messagesReceived)",
+                        samples: metrics.messagesReceivedHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .zeroToAtLeast(1),
@@ -321,8 +332,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Bytes sent",
-                        valueText: compactBytes(p2pInbox.bytesSent),
-                        samples: p2pInbox.bytesSentHistory,
+                        valueText: compactBytes(metrics.bytesSent),
+                        samples: metrics.bytesSentHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .padded,
@@ -330,8 +341,8 @@ struct KPISettingsView: View {
                     )
                     KPIMetricCard(
                         title: "Bytes received",
-                        valueText: compactBytes(p2pInbox.bytesReceived),
-                        samples: p2pInbox.bytesReceivedHistory,
+                        valueText: compactBytes(metrics.bytesReceived),
+                        samples: metrics.bytesReceivedHistory,
                         colors: appState.colors,
                         window: AppPerformanceMonitor.fastHistoryWindow,
                         yScale: .padded,
@@ -340,10 +351,10 @@ struct KPISettingsView: View {
                 })
 
                 kpiSection("Relay") {
-                    kpiRow("Forwarded", "\(p2pInbox.messagesForwarded)")
-                    kpiRow("Duplicates dropped", "\(p2pInbox.duplicatesDropped)")
-                    kpiRow("TTL dropped", "\(p2pInbox.ttlDropped)")
-                    kpiRow("Last hop", "\(p2pInbox.lastHop)")
+                    kpiRow("Forwarded", "\(metrics.messagesForwarded)")
+                    kpiRow("Duplicates dropped", "\(metrics.duplicatesDropped)")
+                    kpiRow("TTL dropped", "\(metrics.ttlDropped)")
+                    kpiRow("Last hop", "\(metrics.lastHop)")
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -366,12 +377,12 @@ struct KPISettingsView: View {
                                 Capsule().stroke(appState.colors.danger.opacity(0.55), lineWidth: 1)
                             )
                     }
-                    .disabled(p2pInbox.messages.isEmpty)
-                    .opacity(p2pInbox.messages.isEmpty ? 0.45 : 1)
+                    .disabled(log.messages.isEmpty)
+                    .opacity(log.messages.isEmpty ? 0.45 : 1)
                     .accessibilityLabel("Clear message log")
 
                     kpiTable {
-                        kpiRow("Buffer", "\(p2pInbox.messages.count)/\(P2PConfig.maxLogCount)")
+                        kpiRow("Buffer", "\(log.messages.count)/\(P2PConfig.maxLogCount)")
                     }
                 }
             }
@@ -379,7 +390,10 @@ struct KPISettingsView: View {
             .padding(.bottom, 20)
         }
         .background(appState.colors.background)
-        .onAppear { performance.start() }
+        .onAppear {
+            performance.start()
+            p2pInbox.startKPIHistory()
+        }
         .onDisappear { performance.stop() }
     }
 
@@ -469,7 +483,12 @@ struct KPISettingsView: View {
 
 struct P2PLogsSettingsView: View {
     @ObservedObject var appState: AppStateViewModel
-    @ObservedObject var p2pInbox: P2PInboxService
+    @ObservedObject private var log: P2PMessageLog
+
+    init(appState: AppStateViewModel, p2pInbox: P2PInboxService) {
+        self.appState = appState
+        _log = ObservedObject(wrappedValue: p2pInbox.log)
+    }
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -479,14 +498,14 @@ struct P2PLogsSettingsView: View {
 
     var body: some View {
         Group {
-            if p2pInbox.messages.isEmpty {
+            if log.messages.isEmpty {
                 VStack {
                     Spacer()
                     Text("No nearby messages yet")
                         .font(AppType.display(22))
                         .tracking(-0.6)
                         .foregroundColor(appState.colors.muted)
-                    Text("Turn the radio on to collect the live 200-message buffer.")
+                    Text("Turn Huddle on to collect the live 200-message buffer.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                         .multilineTextAlignment(.center)
@@ -498,7 +517,7 @@ struct P2PLogsSettingsView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(p2pInbox.messages) { entry in
+                            ForEach(log.messages) { entry in
                                 logRow(entry)
                                     .id(entry.id)
                             }
@@ -508,7 +527,7 @@ struct P2PLogsSettingsView: View {
                     .onAppear {
                         scrollToEnd(proxy)
                     }
-                    .onChange(of: p2pInbox.messages.last?.id) { _ in
+                    .onChange(of: log.messages.last?.id) { _ in
                         scrollToEnd(proxy)
                     }
                 }
@@ -548,7 +567,7 @@ struct P2PLogsSettingsView: View {
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
-        guard let lastID = p2pInbox.messages.last?.id else { return }
+        guard let lastID = log.messages.last?.id else { return }
         DispatchQueue.main.async {
             proxy.scrollTo(lastID, anchor: .bottom)
         }

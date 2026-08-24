@@ -29,7 +29,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) -> Bool {
         // PremiumManager loads entitlements and starts AdMob only when not premium.
         _ = PremiumManager.shared
-        AppPerformanceMonitor.shared.startHistory()
         UNUserNotificationCenter.current().delegate = self
         return true
     }

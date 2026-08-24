@@ -14,7 +14,10 @@ class SpeechService: ObservableObject {
     /// Published property containing the current transcribed text with emojis
     @Published var currentText: String = "" {
         didSet {
-            // Track text changes for emoji service
+            if !isUpdatingFromSpeechPipeline {
+                lastSpeechText = currentText
+                emojisAddedForCurrentText = false
+            }
             handleTextChange()
         }
     }
@@ -40,19 +43,18 @@ class SpeechService: ObservableObject {
     private let TEXT_STABILITY_INTERVAL: TimeInterval = 2.5
     /// Flag to prevent duplicate emoji insertion
     private var emojisAddedForCurrentText: Bool = false
+    /// Last SpeechKit string we accepted. Display may add an emoji suffix after this.
+    private var lastSpeechText: String = ""
+    /// True while we assign `currentText` from speech or emoji append.
+    private var isUpdatingFromSpeechPipeline = false
+    /// Settings: when false, never analyze or append emojis. Default off.
+    var emojiDetectionEnabled = false
     
     /// Cleans up all resources on deallocation
     deinit {
         textStabilityTimer?.invalidate()
         textStabilityTimer = nil
         teardownEngine()
-    }
-    
-    /// Extracts base text without emojis for comparison purposes
-    /// - Parameter text: The text to process
-    /// - Returns: The text with all emoji characters removed
-    private func extractBaseText(from text: String) -> String {
-        return text.unicodeScalars.filter { !$0.properties.isEmoji }.reduce("") { $0 + String($1) }.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     /// Requests speech recognition authorization from the user
@@ -152,16 +154,16 @@ class SpeechService: ObservableObject {
     }
     
     private func applyTranscription(_ newRawText: String) {
-        let currentBaseText = extractBaseText(from: currentText)
-        let newBaseText = extractBaseText(from: newRawText)
-        
-        if newBaseText != currentBaseText && !newBaseText.isEmpty {
-            currentText = newRawText
-            emojisAddedForCurrentText = false
-            AppLog.debug("[SpeechService] Text changed: '\(currentBaseText)' -> '\(newBaseText)'")
-        } else if newBaseText == currentBaseText {
-            AppLog.debug("[SpeechService] Text unchanged, keeping existing text with emojis")
-        }
+        guard !newRawText.isEmpty, newRawText != lastSpeechText else { return }
+        lastSpeechText = newRawText
+        emojisAddedForCurrentText = false
+        setDisplayText(newRawText)
+    }
+
+    private func setDisplayText(_ text: String) {
+        isUpdatingFromSpeechPipeline = true
+        currentText = text
+        isUpdatingFromSpeechPipeline = false
     }
     
     /// Drops a half-started session without emoji side effects.
@@ -200,12 +202,13 @@ class SpeechService: ObservableObject {
         isRecording = false
         teardownEngine()
         
-        if textIsFromSpeech && !currentText.isEmpty {
-            if !emojisAddedForCurrentText && !currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
-                addEmojisToText()
-            }
-            textIsFromSpeech = false
+        if textIsFromSpeech
+            && emojiDetectionEnabled
+            && !currentText.isEmpty
+            && !emojisAddedForCurrentText {
+            addEmojisToText()
         }
+        textIsFromSpeech = false
         
         AppLog.debug("[SpeechService] Speech recognition stopped")
     }
@@ -217,10 +220,11 @@ class SpeechService: ObservableObject {
         textStabilityTimer?.invalidate()
         lastTextChangeTime = Date()
         
-        // Don't reset emojisAddedForCurrentText here - let it be checked in addEmojisToText
-        
         // Only check stability if we're recording and text is from speech
-        guard isRecording && textIsFromSpeech && !currentText.isEmpty else {
+        guard emojiDetectionEnabled,
+              isRecording,
+              textIsFromSpeech,
+              !currentText.isEmpty else {
             return
         }
         
@@ -228,6 +232,7 @@ class SpeechService: ObservableObject {
         // Use RunLoop.main.add to ensure it runs even when view is scrolling
         let timer = Timer(timeInterval: TEXT_STABILITY_INTERVAL, repeats: false) { [weak self] timer in
             guard let self = self else { return }
+            guard self.emojiDetectionEnabled else { return }
             
             // Check if text hasn't changed during the interval
             let timeSinceLastChange = Date().timeIntervalSince(self.lastTextChangeTime)
@@ -245,48 +250,20 @@ class SpeechService: ObservableObject {
     /// Adds emojis to the current text based on sentiment and content analysis
     /// This method runs emoji analysis on a background thread to avoid blocking the UI
     private func addEmojisToText() {
-        // Don't add emojis if they're already present and we've already added them
-        if emojisAddedForCurrentText {
-            AppLog.debug("[SpeechService] EmojiService: Already added emojis, skipping")
-            return
-        }
-        
-        // Check if emojis are already added to current text (avoid duplicates)
-        if currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
-            AppLog.debug("[SpeechService] EmojiService: Emojis already in text, marking as added")
-            emojisAddedForCurrentText = true
-            return
-        }
-        
-        guard !currentText.isEmpty else {
-            AppLog.debug("[SpeechService] EmojiService: Text is empty, skipping")
-            return
-        }
-        
-        AppLog.debug("[SpeechService] EmojiService: Analyzing text: '\(currentText)'")
-        
-        // Perform emoji analysis on background thread for better performance
+        guard emojiDetectionEnabled else { return }
+        if emojisAddedForCurrentText { return }
+        guard !currentText.isEmpty else { return }
+
+        let speechSnapshot = lastSpeechText
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let emojis = EmojiService.shared.analyzeTextForEmojis(text: self.currentText)
-            AppLog.debug("[SpeechService] EmojiService: Got emojis: '\(emojis)'")
-            
+            let emojis = EmojiService.shared.analyzeTextForEmojis(text: speechSnapshot.isEmpty ? self.currentText : speechSnapshot)
+            let suffix = emojis.isEmpty ? "💭" : emojis
             DispatchQueue.main.async {
-                // Double-check text hasn't changed and emojis not already added
-                if !self.emojisAddedForCurrentText && !self.currentText.isEmpty {
-                    // Check again if emojis were added while processing
-                    if !self.currentText.unicodeScalars.contains(where: { $0.properties.isEmoji }) {
-                        if !emojis.isEmpty {
-                            self.currentText = self.currentText + " " + emojis
-                            AppLog.debug("[SpeechService] EmojiService: Added emojis to text")
-                        } else {
-                            // Final fallback - always add at least one emoji
-                            self.currentText = self.currentText + " " + "💭"
-                            AppLog.debug("[SpeechService] EmojiService: Added fallback emoji")
-                        }
-                    }
-                    self.emojisAddedForCurrentText = true
-                }
+                guard !self.emojisAddedForCurrentText else { return }
+                guard self.lastSpeechText == speechSnapshot, !self.currentText.isEmpty else { return }
+                self.emojisAddedForCurrentText = true
+                self.setDisplayText(self.currentText + " " + suffix)
             }
         }
     }

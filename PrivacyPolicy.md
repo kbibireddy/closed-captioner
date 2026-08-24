@@ -55,14 +55,14 @@ Optional **Remove Ads** is processed by **Apple StoreKit**. We do not receive yo
 ### 2.6 Usage Preferences (On-Device Only)
 App settings and preferences stay on your device. We do **not** operate a separate analytics SDK beyond what AdMob provides for ad delivery and measurement.
 
-### 2.7 Nearby Messages (Optional, On-Device / Local Network)
-If you turn **on** the radio control, the App may receive short text messages from other Closed Captioner peers (or a local test tool) over **Bluetooth or the local network** using Apple Multipeer Connectivity. This is **off by default**.
+### 2.7 Huddle Messages (Optional, On-Device / Local Network)
+If you turn **on** Huddle, the App may receive short text messages from other Closed Captioner peers (or a local test tool) over **Bluetooth or the local network** using Apple Multipeer Connectivity. This is **off by default**.
 - Messages stay on the receiving device for display. We do **not** send them to our servers or to AdMob.
 - This does **not** use cellular data as a transport. If nobody nearby is emitting, nothing is received.
-- Optional **Relay messages** (Settings → Preferences → Nearby, **on by default**) may forward a message you receive to other nearby peers. Delivery is not guaranteed. Relay does nothing unless radio is also on.
-- While radio is on, the App may keep advertising and browsing nearby peers if you switch apps or lock the phone, until you turn radio off, close the App, or the auto-off timer you chose in Settings (default 30 minutes). iOS may still pause this to save battery.
-- If radio is on when you leave the App, we may show a **local iOS notification** on this device (lock screen / Notification Center) reminding you the phone is still on the nearby mesh. That notice is not sent to any server.
-- You can turn the radio off at any time. iOS Local Network (and Bluetooth) permission may be requested the first time you enable it.
+- Optional **Relay messages** (Settings → Preferences → Huddle, **on by default**) may forward a message you receive to other nearby peers. Delivery is not guaranteed. Relay does nothing unless Huddle is also on.
+- While Huddle is on, the App may keep advertising and browsing nearby peers if you switch apps or lock the phone, until you turn Huddle off, close the App, or the auto-off timer you chose in Settings (default 30 minutes). iOS may still pause this to save battery.
+- If Huddle is on, we may show **at most one local iOS notification per launch** when you lock the phone or leave the App for at least a minute. Control Center or a quick app switch does not trigger it. That notice stays on this device and is not sent to any server.
+- You can turn Huddle off at any time. iOS Local Network (and Bluetooth) permission may be requested the first time you enable it.
 
 ## 3. How We Collect Information
 
@@ -70,13 +70,13 @@ If you turn **on** the radio control, the App may receive short text messages fr
 - **Automatically via permissions:** Microphone, Speech Recognition, and (for personalized ads) App Tracking Transparency
 - **Through third parties:** Apple (Speech Recognition, StoreKit) and Google AdMob (advertising)
 - **On device:** Motion sensors for shake detection; local caption/history storage
-- **Nearby (optional):** Local network or Bluetooth when you enable the radio, to receive caption messages from nearby Closed Captioner peers. Relay (**on by default**) may forward a message to other nearby peers; it never leaves the local radios. You can turn relay off in Settings. Radio may stay active in the background until you turn it off, close the App, or the auto-off timer ends.
+- **Huddle (optional):** Local network or Bluetooth when you enable Huddle, to receive caption messages from nearby Closed Captioner peers. Relay (**on by default**) may forward a message to other nearby peers; it never leaves the local Bluetooth or Wi‑Fi link. You can turn relay off in Settings. Huddle may stay active in the background until you turn it off, close the App, or the auto-off timer ends.
 
 You can revoke microphone, speech, and tracking permissions in iOS Settings at any time.
 
 ## 4. How We Use Your Information
 
-- **App Functionality:** Speech-to-text, captions, history, export, shake features, and optional nearby message receive when the radio is on
+- **App Functionality:** Speech-to-text, captions, history, export, shake features, and optional nearby message receive when Huddle is on
 - **Advertising:** Deliver, personalize (if allowed), and measure ads via Google AdMob unless Remove Ads is purchased
 - **Tracking (as defined by Apple):** Device advertising identifiers and related advertising data may be used to track you across apps and websites owned by other companies **only if** you allow tracking via App Tracking Transparency
 
@@ -95,7 +95,7 @@ You can revoke microphone, speech, and tracking permissions in iOS Settings at a
 - **Apple Speech Recognition:** Audio for transcription (Apple's privacy policy applies)
 - **Google AdMob:** Device ID, advertising-related data, and other information Google requires to serve and measure ads (Google's privacy policy applies)
 - **Apple StoreKit:** Purchase processing (Apple's privacy policy applies)
-- **Nearby messages (optional):** If you enable the radio, short text may travel over Bluetooth or the local network to or from nearby Closed Captioner peers. This does not go to our servers.
+- **Nearby messages (optional):** If you enable Huddle, short text may travel over Bluetooth or the local network to or from nearby Closed Captioner peers. This does not go to our servers.
 
 ### 5.3 Security
 We follow iOS security practices for local storage. No method of storage or transmission is 100% secure.

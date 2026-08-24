@@ -12,6 +12,7 @@ struct GeneralSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 userInfoSection
+                captionsSection
                 nearbySection
                 appearanceSection
                 themeSection
@@ -32,7 +33,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("This name is shown on radio messages you send. It starts as this device’s host name.")
+            Text("This name is shown on Huddle messages you send. It starts as this device’s host name.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -66,14 +67,42 @@ struct GeneralSettingsView: View {
         }
     }
 
-    private var nearbySection: some View {
+    private var captionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Radio")
+            Text("Captions")
                 .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("When radio is on, this phone passes captions to the next person so they can travel farther. Delivery isn’t guaranteed.")
+            Text("Experimental. Suggestions can be wrong or distracting; turn off anytime.")
+                .font(AppType.display(14, weight: .medium))
+                .foregroundColor(appState.colors.muted)
+                .padding(.bottom, 4)
+
+            Toggle(isOn: $appState.emojiDetectionEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Emoji detection")
+                        .font(AppType.display(15, weight: .semibold))
+                        .foregroundColor(appState.colors.text)
+                    Text("Off by default. When on, may append emojis after speech text settles.")
+                        .font(AppType.display(13, weight: .medium))
+                        .foregroundColor(appState.colors.muted)
+                }
+            }
+            .tint(appState.colors.accent)
+            .accessibilityLabel("Emoji detection")
+            .accessibilityHint("Experimental. Adds suggested emojis to captions after speech stabilizes.")
+        }
+    }
+
+    private var nearbySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Huddle")
+                .font(AppType.display(22))
+                .tracking(-0.8)
+                .foregroundColor(appState.colors.text)
+
+            Text("When Huddle is on, this phone passes captions to the next person so they can travel farther. Delivery isn’t guaranteed.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -83,20 +112,20 @@ struct GeneralSettingsView: View {
                     Text("Relay messages")
                         .font(AppType.display(15, weight: .semibold))
                         .foregroundColor(appState.colors.text)
-                    Text("On by default. Uses extra Bluetooth or Wi‑Fi only while radio is on.")
+                    Text("On by default. Uses extra Bluetooth or Wi‑Fi only while Huddle is on.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                 }
             }
             .tint(appState.colors.accent)
             .accessibilityLabel("Relay messages")
-            .accessibilityHint("Forwards radio captions so they can reach people farther away. Radio must also be on.")
+            .accessibilityHint("Forwards Huddle captions so they can reach people farther away. Huddle must also be on.")
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Keep radio on")
+                Text("Keep Huddle on")
                     .font(AppType.display(15, weight: .semibold))
                     .foregroundColor(appState.colors.text)
-                Text("Stays on if you switch apps or lock the phone. Stops when you turn radio off, close the app, or this timer ends. iOS may still pause it to save battery.")
+                Text("Stays on if you switch apps or lock the phone. Stops when you turn Huddle off, close the app, or this timer ends. iOS may still pause it to save battery.")
                     .font(AppType.display(13, weight: .medium))
                     .foregroundColor(appState.colors.muted)
 

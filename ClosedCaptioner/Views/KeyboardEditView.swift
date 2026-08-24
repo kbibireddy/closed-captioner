@@ -55,7 +55,7 @@ struct KeyboardEditView: View {
                         Text("Press")
                         micStyleIcon("arrow.right", size: 32, fontSize: 13)
                     }
-                    Text("to put this on the canvas.")
+                    Text("to put this text on the canvas.")
                 }
             }
             .font(AppType.display(22, weight: .medium))
@@ -63,7 +63,7 @@ struct KeyboardEditView: View {
             .foregroundColor(appState.colors.text)
             .multilineTextAlignment(.center)
 
-            Text("With radio on, swipe the caption up to send it nearby.")
+            Text("And with Huddle turned on, tap and swipe up to broadcast this message to peers on the Huddle network.")
                 .font(AppType.display(17, weight: .medium))
                 .tracking(-0.4)
                 .foregroundColor(appState.colors.muted)
@@ -71,14 +71,14 @@ struct KeyboardEditView: View {
         }
         .padding(.horizontal, 32)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Press the right arrow to put this on the canvas. With radio on, swipe the caption up to send it nearby.")
+        .accessibilityLabel("Press the right arrow to put this text on the canvas. And with Huddle turned on, tap and swipe up to broadcast this message to peers on the Huddle network.")
     }
 
     private var sendHintRow: some View {
         HStack(alignment: .center, spacing: 8) {
             Text("Press")
             micStyleIcon("arrow.right", size: 32, fontSize: 13)
-            Text("to put this on the canvas.")
+            Text("to put this text on the canvas.")
                 .lineLimit(1)
         }
         .fixedSize(horizontal: true, vertical: false)

@@ -55,7 +55,7 @@ final class AppPerformanceMonitor: ObservableObject {
         historyTimer?.invalidate()
     }
 
-    /// Fast 3s history plus slow 30s series. Safe at launch; no-ops if already running.
+    /// Fast 3s history plus slow 30s series. Starts on first KPIs visit; no-ops if already running.
     func startHistory() {
         guard historyTimer == nil else { return }
         enableMonitoring()

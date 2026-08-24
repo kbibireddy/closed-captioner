@@ -20,9 +20,20 @@ struct ContentView: View {
     @State private var editedText = ""
     @State private var previousRecordingState: Bool = false
     @State private var shakeCooldownActive: Bool = false
-    @State private var captionFlyOffset: CGFloat = 0
-    @State private var captionFlyOpacity: Double = 1
+    @State private var captionOffset: CGSize = .zero
+    @State private var captionOpacity: Double = 1
+    @State private var captionScale: CGFloat = 1
     @State private var isSendingCaption = false
+    @State private var isFlickBusy = false
+    @State private var radioIsOn = false
+    /// Center feedback after send / failed flick (like Poof!!!).
+    @State private var canvasFeedback: CanvasFeedback?
+    @State private var canvasFeedbackOpacity: Double = 1
+
+    private enum CanvasFeedback: Equatable {
+        case sent
+        case tryAgain
+    }
     
     init() {
         let speechService = SpeechService()
@@ -38,49 +49,13 @@ struct ContentView: View {
             appState.colors.background
                 .ignoresSafeArea()
             
-            // Flash transition
-            if appState.showFlash {
-                Color.white
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-            }
-            
             // Layer order (back → front):
-            // 1) Caption canvas
+            // 1) Caption canvas (full-area flick when radio + text)
             // 2) ControlsView (top/bottom bars with banners between them)
             // 3) Modal overlays
 
-            // Caption text canvas (behind ads and buttons)
-            VStack {
-                Spacer()
-
-                if appState.showPoofAnimation {
-                    Text("✨Poof!!!✨")
-                        .font(AppType.display(56))
-                        .tracking(-1.8)
-                        .foregroundColor(appState.colors.text)
-                        .opacity(appState.poofOpacity)
-                } else if !speechService.currentText.isEmpty {
-                    CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
-                        .offset(y: captionFlyOffset)
-                        .opacity(captionFlyOpacity)
-                        .gesture(broadcastSwipeGesture)
-                        .accessibilityHint(
-                            p2pInbox.isListening
-                                ? "Swipe up to send this caption to nearby Closed Captioner devices"
-                                : ""
-                        )
-                } else if micController.isRecording {
-                    Text("Listening…")
-                        .font(AppType.display(40))
-                        .tracking(-1.2)
-                        .foregroundColor(appState.colors.muted)
-                }
-
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .zIndex(1)
+            captionCanvas
+                .zIndex(1)
 
             // Ad presentation + button chrome (buttons always above ads)
             ControlsView(
@@ -143,16 +118,22 @@ struct ContentView: View {
         .onAppear {
             p2pInbox.relayEnabled = appState.relayMessages
             p2pInbox.applyAutoStopAfter(appState.radioKeepAlive.duration)
+            speechService.emojiDetectionEnabled = appState.emojiDetectionEnabled
+            radioIsOn = p2pInbox.isListening
             setupAudioSession()
             requestPermissions()
             previousRecordingState = micController.isRecording
             updateShakeMonitoring()
         }
+        .onReceive(p2pInbox.chrome.$isListening) { radioIsOn = $0 }
         .onChange(of: appState.relayMessages) { enabled in
             p2pInbox.relayEnabled = enabled
         }
         .onChange(of: appState.radioKeepAlive) { keepAlive in
             p2pInbox.applyAutoStopAfter(keepAlive.duration)
+        }
+        .onChange(of: appState.emojiDetectionEnabled) { enabled in
+            speechService.emojiDetectionEnabled = enabled
         }
         .onChange(of: appState.showSettings) { _ in
             updateShakeMonitoring()
@@ -163,15 +144,21 @@ struct ContentView: View {
         .onChange(of: scenePhase) { phase in
             handleScenePhase(phase)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            scheduleMeshNoticeIfListening()
-        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             p2pInbox.prepareForBackground()
-            scheduleMeshNoticeIfListening()
+            NearbyMeshNotice.noteWentToBackground(
+                radioOn: p2pInbox.isListening,
+                keepAlive: appState.radioKeepAlive
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataWillBecomeUnavailableNotification)) { _ in
+            NearbyMeshNotice.noteDeviceLocked(
+                radioOn: p2pInbox.isListening,
+                keepAlive: appState.radioKeepAlive
+            )
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            cancelMeshNoticeIfForeground()
+            NearbyMeshNotice.noteBecameActive()
         }
         .onShake {
             handleShake()
@@ -186,27 +173,18 @@ struct ContentView: View {
     private func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .active:
-            cancelMeshNoticeIfForeground()
+            NearbyMeshNotice.noteBecameActive()
             p2pInbox.rebuildSessionIfListening()
-        case .inactive, .background:
-            scheduleMeshNoticeIfListening()
-            if phase == .background {
-                p2pInbox.prepareForBackground()
-            }
+        case .background:
+            p2pInbox.prepareForBackground()
+            NearbyMeshNotice.noteWentToBackground(
+                radioOn: p2pInbox.isListening,
+                keepAlive: appState.radioKeepAlive
+            )
         default:
             break
         }
         updateShakeMonitoring()
-    }
-
-    private func scheduleMeshNoticeIfListening() {
-        guard p2pInbox.isListening else { return }
-        NearbyMeshNotice.postStillOnMesh(keepAlive: appState.radioKeepAlive)
-    }
-
-    private func cancelMeshNoticeIfForeground() {
-        guard UIApplication.shared.applicationState == .active else { return }
-        NearbyMeshNotice.cancelPending()
     }
 
     /// Accelerometer runs only in the foreground on the caption canvas.
@@ -248,57 +226,226 @@ struct ContentView: View {
         }
     }
     
-    private var broadcastSwipeGesture: some Gesture {
-        DragGesture(minimumDistance: 24)
+    private var captionCanvas: some View {
+        VStack {
+            Spacer()
+
+            if appState.showPoofAnimation {
+                Text("Poof!!!")
+                    .font(AppType.display(56))
+                    .tracking(-1.8)
+                    .foregroundColor(appState.colors.text)
+                    .opacity(appState.poofOpacity)
+            } else if let canvasFeedback {
+                canvasFeedbackView(canvasFeedback)
+            } else if !speechService.currentText.isEmpty {
+                CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
+                    .offset(captionOffset)
+                    .scaleEffect(captionScale)
+                    .opacity(captionOpacity)
+                    .accessibilityHint(
+                        radioIsOn
+                            ? "Flick up to send this caption to nearby Closed Captioner devices"
+                            : ""
+                    )
+            } else if micController.isRecording {
+                Text("Listening…")
+                    .font(AppType.display(40))
+                    .tracking(-1.2)
+                    .foregroundColor(appState.colors.muted)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .gesture(broadcastFlickGesture, including: canBroadcastCaption ? .all : .none)
+    }
+
+    @ViewBuilder
+    private func canvasFeedbackView(_ feedback: CanvasFeedback) -> some View {
+        switch feedback {
+        case .sent:
+            Text("Sent!")
+                .font(AppType.display(56))
+                .tracking(-1.8)
+                .foregroundColor(appState.colors.text)
+                .opacity(canvasFeedbackOpacity)
+        case .tryAgain:
+            Text("Try again, Swipe up next time")
+                .font(AppType.display(28))
+                .tracking(-0.8)
+                .foregroundColor(appState.colors.text)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
+                .opacity(canvasFeedbackOpacity)
+                .accessibilityLabel("Try again, swipe up next time")
+        }
+    }
+
+    /// Full-canvas drag: finger-follow, then flick in an upward 120° cone (±60° from up).
+    private var broadcastFlickGesture: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .local)
+            .onChanged { value in
+                guard canBroadcastCaption else { return }
+                captionOffset = value.translation
+                captionScale = 1.05
+            }
             .onEnded { value in
-                handleBroadcastSwipe(translation: value.translation)
+                handleBroadcastFlick(value)
             }
     }
 
     private var canBroadcastCaption: Bool {
-        p2pInbox.isListening
+        radioIsOn
             && !speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !appState.showSettings
             && !appState.showKeyboard
             && !appState.showPoofAnimation
+            && canvasFeedback == nil
             && !isSendingCaption
+            && !isFlickBusy
     }
 
-    /// Swipe up while radio is on: send nearby, keep history, fly the caption off-screen.
-    private func handleBroadcastSwipe(translation: CGSize) {
-        guard canBroadcastCaption else { return }
-        let isUp = translation.height < -56 && abs(translation.height) > abs(translation.width)
-        guard isUp else { return }
-        sendCaptionNearby()
-    }
-
-    private func sendCaptionNearby() {
-        let text = speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        isSendingCaption = true
-        let sent = p2pInbox.broadcast(text, from: appState.displayName)
-        guard sent else {
-            isSendingCaption = false
+    private func handleBroadcastFlick(_ value: DragGesture.Value) {
+        // Don’t re-check canBroadcastCaption here — it can race with gesture end.
+        guard radioIsOn,
+              !speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !isSendingCaption,
+              !isFlickBusy,
+              canvasFeedback == nil else {
+            resetCaptionTransform(animated: true)
             return
         }
+
+        let translation = value.translation
+        let distance = hypot(translation.width, translation.height)
+        // Soft cancel: tiny moves spring home without feedback.
+        guard distance >= 28 else {
+            resetCaptionTransform(animated: true)
+            return
+        }
+
+        if isUpwardSendCone(translation: translation, predictedEnd: value.predictedEndTranslation) {
+            commitSendFlick(translation: translation, predictedEnd: value.predictedEndTranslation)
+        } else {
+            showTryAgainAndRestore()
+        }
+    }
+
+    /// Straight up ± 60° (total 120° cone). Prefers flick impulse when present.
+    private func isUpwardSendCone(translation: CGSize, predictedEnd: CGSize) -> Bool {
+        let impulse = CGSize(
+            width: predictedEnd.width - translation.width,
+            height: predictedEnd.height - translation.height
+        )
+        let dir: CGSize
+        if hypot(impulse.width, impulse.height) >= 24 {
+            dir = impulse
+        } else {
+            dir = translation
+        }
+        guard dir.height < -8 else { return false }
+        let degreesFromUp = abs(atan2(dir.width, -dir.height) * 180 / .pi)
+        return degreesFromUp <= 60
+    }
+
+    private func commitSendFlick(translation: CGSize, predictedEnd: CGSize) {
+        isFlickBusy = true
+        isSendingCaption = true
+
+        let sent = p2pInbox.broadcast(
+            speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines),
+            from: appState.displayName
+        )
+        guard sent else {
+            // Rare (radio tore down mid-flick): spring home, don’t pretend it’s a bad angle.
+            isSendingCaption = false
+            isFlickBusy = false
+            resetCaptionTransform(animated: true)
+            return
+        }
+
         if micController.isRecording {
             micController.stopRecording()
         }
-
         saveCurrentTextToHistory()
 
-        let travel = UIScreen.main.bounds.height * 0.75
-        withAnimation(.easeIn(duration: 0.42)) {
-            captionFlyOffset = -travel
-            captionFlyOpacity = 0
+        let impulse = CGSize(
+            width: predictedEnd.width - translation.width,
+            height: predictedEnd.height - translation.height
+        )
+        let speed = max(hypot(impulse.width, impulse.height), hypot(translation.width, translation.height))
+        let travel = max(UIScreen.main.bounds.height, UIScreen.main.bounds.width) * 1.15
+        let length = max(hypot(translation.width, translation.height), 1)
+        let end = CGSize(
+            width: translation.width / length * travel,
+            height: translation.height / length * travel
+        )
+        // Faster flick → shorter flight (clamped for readability).
+        let duration = min(0.55, max(0.28, 420 / max(speed, 280)))
+
+        withAnimation(.easeOut(duration: duration)) {
+            captionOffset = end
+            captionOpacity = 0
+            captionScale = 0.92
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
             speechService.currentText = ""
-            captionFlyOffset = 0
-            captionFlyOpacity = 1
+            resetCaptionTransform(animated: false)
             isSendingCaption = false
+            showCanvasFeedback(.sent) {
+                isFlickBusy = false
+            }
+        }
+    }
+
+    private func showTryAgainAndRestore() {
+        isFlickBusy = true
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            captionOpacity = 0
+            captionScale = 0.96
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            captionOffset = .zero
+            captionScale = 1
+            // Opacity stays 0 so the caption doesn’t flash under “Try again”.
+            showCanvasFeedback(.tryAgain) {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) {
+                    captionOpacity = 1
+                    captionScale = 1
+                }
+                isFlickBusy = false
+            }
+        }
+    }
+
+    private func showCanvasFeedback(_ feedback: CanvasFeedback, then completion: @escaping () -> Void) {
+        canvasFeedback = feedback
+        canvasFeedbackOpacity = 1
+        withAnimation(.easeOut(duration: 0.8)) {
+            canvasFeedbackOpacity = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+            canvasFeedback = nil
+            canvasFeedbackOpacity = 1
+            completion()
+        }
+    }
+
+    private func resetCaptionTransform(animated: Bool) {
+        let apply = {
+            captionOffset = .zero
+            captionOpacity = 1
+            captionScale = 1
+        }
+        if animated {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.78), apply)
+        } else {
+            apply()
         }
     }
 

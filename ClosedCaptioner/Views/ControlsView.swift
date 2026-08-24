@@ -12,7 +12,7 @@ import SwiftUI
 struct ControlsView: View {
     @ObservedObject var micController: MicController
     @ObservedObject var appState: AppStateViewModel
-    @ObservedObject var p2pInbox: P2PInboxService
+    let p2pInbox: P2PInboxService
     @ObservedObject private var premiumManager = PremiumManager.shared
     let onClear: () -> Void
 
@@ -24,7 +24,7 @@ struct ControlsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
+            RadioTopBar(appState: appState, inbox: p2pInbox)
                 .padding(.vertical, 10)
                 .background(appState.colors.background)
                 .layoutPriority(1)
@@ -38,14 +38,9 @@ struct ControlsView: View {
             Spacer(minLength: 0)
                 .allowsHitTesting(false)
 
-            if p2pInbox.isListening {
-                P2PMessageLogView(
-                    colors: appState.colors,
-                    entries: p2pInbox.messages
-                )
+            NearbyLogStrip(appState: appState, inbox: p2pInbox)
                 .layoutPriority(1)
                 .zIndex(9)
-            }
 
             if showBanners {
                 BannerAdView(adUnitID: AdConfig.bottomBannerAdUnitID)
@@ -60,68 +55,6 @@ struct ControlsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .zIndex(2)
-    }
-
-    private var topBar: some View {
-        HStack(spacing: 12) {
-            Button(action: {
-                appState.toggleSettings()
-            }) {
-                Image(systemName: "gearshape")
-                    .font(AppType.display(18, weight: .semibold))
-                    .foregroundColor(appState.colors.text)
-                    .appChromeButton(for: appState.colors)
-            }
-            .accessibilityLabel("Settings")
-
-            Spacer()
-
-            P2PRadioStatsView(
-                colors: appState.colors,
-                isListening: p2pInbox.isListening,
-                peers: p2pInbox.connectedPeerCount,
-                bytesInPerSecond: p2pInbox.bytesReceivedPerSecond,
-                bytesOutPerSecond: p2pInbox.bytesSentPerSecond,
-                isRelaying: appState.relayMessages && p2pInbox.isListening,
-                onJoin: {
-                    if !p2pInbox.isListening {
-                        p2pInbox.startListening()
-                    }
-                }
-            )
-
-            Button(action: {
-                p2pInbox.toggleListening()
-            }) {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(AppType.display(18, weight: .semibold))
-                    .foregroundColor(
-                        p2pInbox.isListening
-                            ? appState.colors.onAccentFill
-                            : appState.colors.text
-                    )
-                    .frame(width: 44, height: 44)
-                    .background(
-                        p2pInbox.isListening
-                            ? appState.colors.accentFill
-                            : appState.colors.buttonBackground
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
-                            .stroke(appState.colors.line, lineWidth: 1)
-                    )
-            }
-            .accessibilityLabel(
-                p2pInbox.isListening
-                    ? "Turn radio off"
-                    : "Turn radio on"
-            )
-            .accessibilityAddTraits(.isButton)
-            .accessibilityValue(p2pInbox.isListening ? "On" : "Off")
-        }
-        .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity)
     }
 
     private var bottomBar: some View {
@@ -186,6 +119,105 @@ struct ControlsView: View {
     }
 }
 
+/// Settings gear, HUD rates, and radio toggle. Observes chrome + traffic, not the log or KPIs.
+private struct RadioTopBar: View {
+    @ObservedObject var appState: AppStateViewModel
+    @ObservedObject private var chrome: P2PRadioChrome
+    @ObservedObject private var traffic: P2PTrafficRates
+    let inbox: P2PInboxService
+
+    init(appState: AppStateViewModel, inbox: P2PInboxService) {
+        self.appState = appState
+        self.inbox = inbox
+        _chrome = ObservedObject(wrappedValue: inbox.chrome)
+        _traffic = ObservedObject(wrappedValue: inbox.traffic)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: {
+                appState.toggleSettings()
+            }) {
+                Image(systemName: "gearshape")
+                    .font(AppType.display(18, weight: .semibold))
+                    .foregroundColor(appState.colors.text)
+                    .appChromeButton(for: appState.colors)
+            }
+            .accessibilityLabel("Settings")
+
+            Spacer()
+
+            P2PRadioStatsView(
+                colors: appState.colors,
+                isListening: chrome.isListening,
+                peers: chrome.connectedPeerCount,
+                bytesInPerSecond: traffic.bytesReceivedPerSecond,
+                bytesOutPerSecond: traffic.bytesSentPerSecond,
+                isRelaying: appState.relayMessages && chrome.isListening,
+                onJoin: {
+                    if !chrome.isListening {
+                        inbox.startListening()
+                    }
+                }
+            )
+
+            Button(action: {
+                inbox.toggleListening()
+            }) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(AppType.display(18, weight: .semibold))
+                    .foregroundColor(
+                        chrome.isListening
+                            ? appState.colors.onAccentFill
+                            : appState.colors.text
+                    )
+                    .frame(width: 44, height: 44)
+                    .background(
+                        chrome.isListening
+                            ? appState.colors.accentFill
+                            : appState.colors.buttonBackground
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
+                    )
+            }
+            .accessibilityLabel(
+                chrome.isListening
+                    ? "Turn Huddle off"
+                    : "Turn Huddle on"
+            )
+            .accessibilityAddTraits(.isButton)
+            .accessibilityValue(chrome.isListening ? "On" : "Off")
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// Nearby log strip. Hidden when radio is off. Does not observe traffic rates.
+private struct NearbyLogStrip: View {
+    @ObservedObject var appState: AppStateViewModel
+    @ObservedObject private var chrome: P2PRadioChrome
+    @ObservedObject private var log: P2PMessageLog
+
+    init(appState: AppStateViewModel, inbox: P2PInboxService) {
+        self.appState = appState
+        _chrome = ObservedObject(wrappedValue: inbox.chrome)
+        _log = ObservedObject(wrappedValue: inbox.log)
+    }
+
+    var body: some View {
+        if chrome.isListening {
+            P2PMessageLogView(
+                colors: appState.colors,
+                entries: log.messages
+            )
+        }
+    }
+}
+
 /// Compact radio status left of the antenna. Off: join CTA. On: reach bars + ↓/↑ B/s.
 /// Lifetime counters stay under Settings → KPIs.
 private struct P2PRadioStatsView: View {
@@ -219,14 +251,14 @@ private struct P2PRadioStatsView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Radio")
+        .accessibilityLabel("Huddle")
         .accessibilityValue(accessibilitySummary)
-        .accessibilityHint(isListening ? "" : "Turns radio on")
+        .accessibilityHint(isListening ? "" : "Turns Huddle on")
     }
 
     private var offState: some View {
         VStack(alignment: .trailing, spacing: 1) {
-            Text("Radio")
+            Text("Huddle")
                 .font(AppType.display(10, weight: .bold))
                 .tracking(0.6)
                 .textCase(.uppercase)
@@ -241,7 +273,7 @@ private struct P2PRadioStatsView: View {
 
     private var onState: some View {
         VStack(alignment: .trailing, spacing: 3) {
-            Text("Radio")
+            Text("Huddle")
                 .font(AppType.display(10, weight: .bold))
                 .tracking(0.6)
                 .textCase(.uppercase)
