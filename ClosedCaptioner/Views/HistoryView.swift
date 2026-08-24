@@ -2,12 +2,12 @@
 //  HistoryView.swift
 //  ClosedCaptioner
 //
-//  Created by Karthik Bibireddy on 10/27/25.
+//  Activity → Captions history (canvas entries) and detail sheet.
 //
 
 import SwiftUI
 
-/// History list content used inside Settings (and formerly as a standalone overlay).
+/// Captions pane inside Settings → Activity.
 struct HistoryContentView: View {
     @ObservedObject var appState: AppStateViewModel
     @ObservedObject var historyManager: HistoryManager
@@ -18,50 +18,50 @@ struct HistoryContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                if historyManager.captions.count > 1 {
-                    Button(action: {
-                        showDeleteAllConfirmation = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "trash")
-                                .font(AppType.display(11, weight: .bold))
-                            Text("Delete All")
+            if !historyManager.sortedCaptions.isEmpty {
+                HStack {
+                    Text("A history of captions that reached the canvas.")
+                        .font(AppType.display(13, weight: .medium))
+                        .foregroundColor(appState.colors.muted)
+                    Spacer(minLength: 8)
+                    if historyManager.captions.count > 1 {
+                        Button {
+                            showDeleteAllConfirmation = true
+                        } label: {
+                            Text("Clear all")
                                 .font(AppType.display(12, weight: .bold))
+                                .foregroundColor(appState.colors.danger)
                         }
-                        .foregroundColor(appState.colors.danger)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(appState.colors.card)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(appState.colors.danger.opacity(0.7), lineWidth: 1)
-                        )
+                        .accessibilityLabel("Clear all captions")
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
                 }
-
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
             }
 
             if historyManager.sortedCaptions.isEmpty {
                 Spacer()
-                Text("No history yet")
-                    .font(AppType.display(22))
-                    .tracking(-0.8)
-                    .foregroundColor(appState.colors.muted)
+                VStack(spacing: 8) {
+                    Text("No captions yet")
+                        .font(AppType.display(22))
+                        .tracking(-0.8)
+                        .foregroundColor(appState.colors.muted)
+                    Text("Speech, typing, and shake lines show up here.")
+                        .font(AppType.display(14, weight: .medium))
+                        .foregroundColor(appState.colors.muted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 14) {
+                    LazyVStack(spacing: 12) {
                         ForEach(historyManager.sortedCaptions) { caption in
                             HistoryRow(
                                 caption: caption,
                                 appState: appState,
-                                onTap: {
-                                    selectedCaption = caption
-                                },
+                                onTap: { selectedCaption = caption },
                                 onDelete: {
                                     captionToDelete = caption.id
                                     showDeleteConfirmation = true
@@ -69,20 +69,21 @@ struct HistoryContentView: View {
                             )
                         }
                     }
-                    .padding(20)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
                 .background(appState.colors.background)
             }
         }
-        .alert("Delete All History?", isPresented: $showDeleteAllConfirmation) {
+        .alert("Clear all captions?", isPresented: $showDeleteAllConfirmation) {
             Button("Cancel", role: .cancel) { }
-            Button("Delete All", role: .destructive) {
+            Button("Clear all", role: .destructive) {
                 historyManager.clearHistory()
             }
         } message: {
-            Text("This will permanently delete all history items. This action cannot be undone.")
+            Text("This permanently deletes every caption in history.")
         }
-        .alert("Delete Item?", isPresented: $showDeleteConfirmation) {
+        .alert("Delete caption?", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 if let id = captionToDelete {
@@ -90,15 +91,13 @@ struct HistoryContentView: View {
                 }
             }
         } message: {
-            Text("This will permanently delete this history item. This action cannot be undone.")
+            Text("This caption will be removed from history.")
         }
         .sheet(item: $selectedCaption) { caption in
             HistoryDetailView(
                 caption: caption,
                 appState: appState,
-                onDone: {
-                    selectedCaption = nil
-                }
+                onDone: { selectedCaption = nil }
             )
         }
     }
@@ -118,42 +117,64 @@ struct HistoryRow: View {
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a zzz"
+        formatter.dateFormat = "h:mm a"
         formatter.timeZone = TimeZone.current
         return formatter
     }()
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(Self.dateFormatter.string(from: caption.timestamp))
                     .font(AppType.display(11, weight: .bold))
                     .foregroundColor(appState.colors.text)
                 Text(Self.timeFormatter.string(from: caption.timestamp))
-                    .font(AppType.display(10, weight: .medium))
+                    .font(AppType.display(11, weight: .medium))
                     .foregroundColor(appState.colors.muted)
             }
-            .frame(width: 110, alignment: .leading)
+            .frame(width: 88, alignment: .leading)
 
-            Text(caption.text)
-                .font(AppType.display(16))
-                .tracking(-0.4)
-                .foregroundColor(appState.colors.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onTap()
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(caption.text)
+                    .font(AppType.display(16))
+                    .tracking(-0.4)
+                    .foregroundColor(appState.colors.text)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(caption.source.chipTitle)
+                    .font(AppType.display(11, weight: .bold))
+                    .foregroundColor(appState.colors.onAccent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(appState.colors.accent)
+                    .clipShape(Capsule())
+                    .accessibilityLabel(caption.source.accessibilityTitle)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
                     .font(AppType.display(13, weight: .semibold))
                     .foregroundColor(appState.colors.danger)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete caption")
         }
-        .appCard(for: appState.colors)
+        .padding(14)
+        .background(appState.colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(appState.colors.line, lineWidth: 1)
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(caption.source.accessibilityTitle), \(caption.text)")
+        .accessibilityHint("Opens caption")
+        .accessibilityAction(named: "Open") { onTap() }
     }
 }
 
@@ -162,21 +183,41 @@ struct HistoryDetailView: View {
     @ObservedObject var appState: AppStateViewModel
     let onDone: () -> Void
 
+    private static let stampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy · h:mm a"
+        return formatter
+    }()
+
     var body: some View {
         ZStack {
             appState.colors.background
                 .ignoresSafeArea()
 
-            VStack {
+            VStack(spacing: 0) {
                 HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Self.stampFormatter.string(from: caption.timestamp))
+                            .font(AppType.display(12, weight: .medium))
+                            .foregroundColor(appState.colors.muted)
+                        Text(caption.source.accessibilityTitle)
+                            .font(AppType.display(11, weight: .bold))
+                            .foregroundColor(appState.colors.onAccent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(appState.colors.accent)
+                            .clipShape(Capsule())
+                    }
                     Spacer()
                     DoneButton(
                         appState: appState,
                         text: "Done",
                         onAction: onDone
                     )
-                    .padding()
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
 
                 Spacer()
                 CaptionTextDisplay(text: caption.text, colors: appState.colors)

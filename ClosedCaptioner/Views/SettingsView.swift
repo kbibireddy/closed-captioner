@@ -8,8 +8,7 @@ import SwiftUI
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case kpis
-    case history
-    case logs
+    case activity
     case purchases
 
     var id: String { rawValue }
@@ -18,8 +17,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "Preferences"
         case .kpis: return "KPIs"
-        case .history: return "History"
-        case .logs: return "Logs"
+        case .activity: return "Activity"
         case .purchases: return "Purchases"
         }
     }
@@ -28,8 +26,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "slider.horizontal.3"
         case .kpis: return "chart.bar"
-        case .history: return "clock"
-        case .logs: return "text.alignleft"
+        case .activity: return "scroll"
         case .purchases: return "cart"
         }
     }
@@ -38,8 +35,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "slider.horizontal.3"
         case .kpis: return "chart.bar.fill"
-        case .history: return "clock.fill"
-        case .logs: return "text.alignleft"
+        case .activity: return "scroll.fill"
         case .purchases: return "cart.fill"
         }
     }
@@ -50,6 +46,7 @@ struct SettingsView: View {
     @ObservedObject var historyManager: HistoryManager
     let p2pInbox: P2PInboxService
     @State private var selectedTab: SettingsTab = .general
+    @State private var activityShowsCaptions = true
 
     var body: some View {
         let _ = appState.fontChoice
@@ -66,13 +63,15 @@ struct SettingsView: View {
                         GeneralSettingsView(appState: appState)
                     case .kpis:
                         KPISettingsView(appState: appState, p2pInbox: p2pInbox)
-                    case .history:
-                        HistoryContentView(
+                    case .activity:
+                        ActivitySettingsView(
                             appState: appState,
-                            historyManager: historyManager
+                            historyManager: historyManager,
+                            p2pInbox: p2pInbox,
+                            onCaptionsVisibilityChange: { showing in
+                                activityShowsCaptions = showing
+                            }
                         )
-                    case .logs:
-                        P2PLogsSettingsView(appState: appState, p2pInbox: p2pInbox)
                     case .purchases:
                         PurchasesView(appState: appState)
                     }
@@ -97,9 +96,9 @@ struct SettingsView: View {
                 appState: appState,
                 text: "Done",
                 onAction: {
-                    let wasOnHistory = selectedTab == .history
+                    let wasOnCaptions = selectedTab == .activity && activityShowsCaptions
                     appState.closeSettings()
-                    guard wasOnHistory, !PremiumManager.shared.isPremium else { return }
+                    guard wasOnCaptions, !PremiumManager.shared.isPremium else { return }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         InterstitialCoordinator.shared.presentAfterHistoryClose()
                     }
@@ -478,98 +477,5 @@ struct KPISettingsView: View {
         }
         let m = Double(n) / 1_000_000.0
         return String(format: m >= 10 ? "%.0fMB" : "%.1fMB", m)
-    }
-}
-
-struct P2PLogsSettingsView: View {
-    @ObservedObject var appState: AppStateViewModel
-    @ObservedObject private var log: P2PMessageLog
-
-    init(appState: AppStateViewModel, p2pInbox: P2PInboxService) {
-        self.appState = appState
-        _log = ObservedObject(wrappedValue: p2pInbox.log)
-    }
-
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm:ss a"
-        return formatter
-    }()
-
-    var body: some View {
-        Group {
-            if log.messages.isEmpty {
-                VStack {
-                    Spacer()
-                    Text("No nearby messages yet")
-                        .font(AppType.display(22))
-                        .tracking(-0.6)
-                        .foregroundColor(appState.colors.muted)
-                    Text("Turn Huddle on to collect the live 200-message buffer.")
-                        .font(AppType.display(13, weight: .medium))
-                        .foregroundColor(appState.colors.muted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                        .padding(.top, 8)
-                    Spacer()
-                }
-            } else {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(log.messages) { entry in
-                                logRow(entry)
-                                    .id(entry.id)
-                            }
-                        }
-                        .padding(20)
-                    }
-                    .onAppear {
-                        scrollToEnd(proxy)
-                    }
-                    .onChange(of: log.messages.last?.id) { _ in
-                        scrollToEnd(proxy)
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(appState.colors.background)
-        .accessibilityLabel("Nearby message logs")
-    }
-
-    private func logRow(_ entry: P2PLogEntry) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(entry.senderName)
-                    .font(AppType.display(12, weight: .bold))
-                    .foregroundColor(appState.colors.accent)
-                Spacer(minLength: 8)
-                Text(Self.timeFormatter.string(from: entry.receivedAt))
-                    .font(AppType.display(11, weight: .medium))
-                    .foregroundColor(appState.colors.muted)
-            }
-            Text(entry.text)
-                .font(AppType.display(16))
-                .tracking(-0.4)
-                .foregroundColor(appState.colors.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(appState.colors.card)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(appState.colors.line, lineWidth: 1)
-        )
-        .accessibilityLabel("\(entry.senderName), \(entry.text)")
-    }
-
-    private func scrollToEnd(_ proxy: ScrollViewProxy) {
-        guard let lastID = log.messages.last?.id else { return }
-        DispatchQueue.main.async {
-            proxy.scrollTo(lastID, anchor: .bottom)
-        }
     }
 }

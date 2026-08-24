@@ -16,6 +16,8 @@ import UserNotifications
 struct P2PLogEntry: Identifiable, Equatable {
     let id: UUID
     let senderName: String
+    /// Multipeer neighbor this payload arrived from. `nil` for locally sent captions.
+    let neighborName: String?
     let text: String
     let receivedAt: Date
 }
@@ -45,7 +47,7 @@ final class P2PTrafficRates: ObservableObject {
     }
 }
 
-/// Live nearby log. Observed by the strip and Settings → Logs, not the caption chrome.
+/// Live nearby log. Observed by the strip and Settings → Activity → Huddle.
 final class P2PMessageLog: ObservableObject {
     @Published var messages: [P2PLogEntry] = []
 
@@ -320,7 +322,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         rememberSeen(messageID)
         metrics.messagesSent += 1
         recordTraffic(sent: data.count, received: 0)
-        appendMessage(senderName: sender, text: trimmed)
+        appendMessage(senderName: sender, text: trimmed, neighborName: nil)
         metrics.lastHop = 0
         AppLog.debug("[P2P] Broadcast \(trimmed.count) chars as \(sender) to \(peers.count) peer(s)")
         return true
@@ -491,11 +493,13 @@ final class P2PInboxService: NSObject, ObservableObject {
         }
     }
 
-    private func appendMessage(senderName: String, text: String) {
+    private func appendMessage(senderName: String, text: String, neighborName: String?) {
         let name = P2PConfig.normalizedName(senderName) ?? "Unknown"
+        let neighbor = P2PConfig.normalizedName(neighborName)
         let entry = P2PLogEntry(
             id: UUID(),
             senderName: name,
+            neighborName: neighbor,
             text: text,
             receivedAt: Date()
         )
@@ -593,7 +597,7 @@ final class P2PInboxService: NSObject, ObservableObject {
 
         metrics.messagesReceived += 1
         let sender = envelope.from ?? neighbor.displayName
-        appendMessage(senderName: sender, text: envelope.text)
+        appendMessage(senderName: sender, text: envelope.text, neighborName: neighbor.displayName)
 
         guard relayEnabled else { return }
         guard let messageID = envelope.id, !messageID.isEmpty else { return }

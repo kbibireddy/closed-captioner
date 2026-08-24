@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var editedText = ""
     @State private var previousRecordingState: Bool = false
     @State private var shakeCooldownActive: Bool = false
+    @State private var lastCaptionSource: CaptionSource = .text
     @State private var captionOffset: CGSize = .zero
     @State private var captionOpacity: Double = 1
     @State private var captionScale: CGFloat = 1
@@ -76,7 +77,7 @@ struct ContentView: View {
                     appState: appState,
                     text: $editedText,
                     onDone: {
-                        // Update text and close keyboard view
+                        lastCaptionSource = .text
                         speechService.currentText = editedText
                         appState.toggleKeyboard()
                     }
@@ -102,8 +103,8 @@ struct ContentView: View {
         .onChange(of: micController.isRecording) { newValue in
             // When new recording starts, save current text to history
             if !previousRecordingState && newValue {
-                // New recording is starting - save previous text
                 saveCurrentTextToHistory()
+                lastCaptionSource = .speech
             }
             // When recording stops, count toward interstitial cadence
             if previousRecordingState && !newValue {
@@ -450,7 +451,7 @@ struct ContentView: View {
     }
 
     /// Saves the current text to history if it's valid and different from the last saved caption
-    private func saveCurrentTextToHistory() {
+    private func saveCurrentTextToHistory(source: CaptionSource? = nil) {
         let text = speechService.currentText
         guard !text.isEmpty else { return }
         
@@ -458,7 +459,13 @@ struct ContentView: View {
         let lastCaption = historyManager.sortedCaptions.first
         guard lastCaption?.text != text else { return }
         
-        let caption = CaptionText(text: text, timestamp: Date(), hasEmojis: true)
+        let resolved = source ?? lastCaptionSource
+        let caption = CaptionText(
+            text: text,
+            timestamp: Date(),
+            hasEmojis: true,
+            source: resolved
+        )
         _ = historyManager.addCaption(caption) // Guard rails are checked inside
     }
     
@@ -491,9 +498,15 @@ struct ContentView: View {
         if let pickupLine = PickupLineService.shared.getPickupLine(shakeStrength: shakeStrength) {
             // Replace current text with pickup line
             speechService.currentText = pickupLine
+            lastCaptionSource = .shake
             
             // Save pickup line to history
-            let caption = CaptionText(text: pickupLine, timestamp: Date(), hasEmojis: false)
+            let caption = CaptionText(
+                text: pickupLine,
+                timestamp: Date(),
+                hasEmojis: false,
+                source: .shake
+            )
             _ = historyManager.addCaption(caption)
         }
         

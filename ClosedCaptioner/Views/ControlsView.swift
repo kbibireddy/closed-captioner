@@ -212,7 +212,8 @@ private struct NearbyLogStrip: View {
         if chrome.isListening {
             P2PMessageLogView(
                 colors: appState.colors,
-                entries: log.messages
+                entries: log.messages,
+                currentDisplayName: appState.displayName
             )
         }
     }
@@ -308,8 +309,8 @@ private struct P2PRadioStatsView: View {
         HStack(alignment: .bottom, spacing: 1.5) {
             ForEach(0..<4, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 0.8, style: .continuous)
-                    .fill(index < filled ? colors.accentFill : colors.line)
-                    .frame(width: 2.4, height: CGFloat(8 + index * 4))
+                    .fill(index < filled ? colors.accent : colors.line)
+                    .frame(width: 2.4, height: CGFloat(6 + index * 3))
             }
         }
         .frame(height: 22)

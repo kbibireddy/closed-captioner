@@ -17,8 +17,13 @@ struct P2PMessageLogView: View {
 
     let colors: ThemeColors
     let entries: [P2PLogEntry]
+    /// Local display name; matching senders show as “You”.
+    let currentDisplayName: String
 
     @State private var contentHeight: CGFloat = 0
+
+    private static let messageFontSize: CGFloat = 13
+    private static var nameFontSize: CGFloat { messageFontSize * 1.05 }
 
     private var isOverflowing: Bool {
         contentHeight > Self.maxHeight + 0.5
@@ -89,21 +94,32 @@ struct P2PMessageLogView: View {
 
     private func logRow(_ entry: P2PLogEntry) -> some View {
         let body = Self.displayText(entry.text)
+        let label = displayName(for: entry)
         return (
-            Text("[\(entry.senderName)] ")
-                .font(AppType.display(13, weight: .medium))
+            Text("\(label)")
+                .font(AppType.display(Self.nameFontSize, weight: .bold))
                 .tracking(-0.3)
                 .foregroundColor(colors.accent)
             +
+            Text("   ")
+            +
             Text(body)
-                .font(AppType.display(13, weight: .medium))
+                .font(AppType.display(Self.messageFontSize, weight: .medium))
                 .tracking(-0.3)
                 .foregroundColor(colors.text)
         )
         .multilineTextAlignment(.leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel("\(entry.senderName), \(body)")
+        .accessibilityLabel("\(label), \(body)")
+    }
+
+    private func displayName(for entry: P2PLogEntry) -> String {
+        let mine = P2PConfig.normalizedName(currentDisplayName) ?? currentDisplayName
+        if entry.senderName.caseInsensitiveCompare(mine) == .orderedSame {
+            return "You"
+        }
+        return entry.senderName
     }
 
     /// Solid from the bottom through 50% of height, gentle fade to 70%,
