@@ -41,8 +41,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 |-----|---------|
 | **Preferences** | Display name, emoji detection (experimental), Huddle relay, Day/Night, theme, font |
 | **KPIs** | App vs phone CPU/memory/threads; 15 min @ 3s for live series, 1 h @ 30s for slow counters; Message Log can be cleared |
-| **History** | Saved captions with timestamps; tap to view; delete |
-| **Logs** | Full P2P message log (newest at bottom) |
+| **Activity** | Captions history (source chips) + Huddle log (plain log lines); Day/Night-style switcher |
 | **Purchases** | Remove Ads IAP + Restore |
 
 ### Huddle (nearby P2P) (Multipeer `cc-p2p`)
@@ -55,7 +54,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 
 ### Monetization
 - **Banners**: top + bottom adaptive AdMob units in `ControlsView` VStack (never over buttons).
-- **Interstitials**: every 3rd mic stop; after closing History tab (non-premium).
+- **Interstitials**: every 3rd mic stop; after closing Activity → Captions (non-premium).
 - **ATT**: deferred until first ad-related user action (`AdsBootstrap.requestTrackingIfNeeded`).
 - **Remove Ads**: product ID `ClosedCaptioner` (non-consumable). Premium hides all ads.
 
@@ -78,7 +77,7 @@ ContentView
 ├── PremiumManager         ← StoreKit 2, entitlements
 └── ControlsView           ← chrome, banners, P2P HUD, mic/keyboard/eraser
 
-SettingsView → General | KPIs | History | Logs | Purchases
+SettingsView → Preferences | KPIs | Activity | Purchases
 ```
 
 | Layer | Key files |
