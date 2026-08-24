@@ -32,9 +32,9 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 - **Shake** (mic off, main screen): replaces text with a pickup line; 5s cooldown.
 
 ### Appearance
-- **Day / Night** in Settings → General → Appearance (persisted).
+- **Day / Night** in Settings → Preferences → Appearance (persisted). Default Night.
 - **Six themes**: Grove (default), Harbor, Ember, Ink, Dusk, **Stealth** (low-contrast; replaces old “Discreet” mode).
-- Serif typography and OfferLab-inspired palette via `Theme.swift` / `AppType`.
+- **Fonts** (Preferences): System (default), New York, Avenir Next, Futura, Rounded. OfferLab-inspired palettes via `Theme.swift` / `AppType`.
 
 ### Settings (gear, full-screen overlay)
 | Tab | Purpose |
@@ -45,7 +45,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 | **Purchases** | Remove Ads IAP + Restore |
 
 ### Huddle (nearby P2P) (Multipeer `cc-p2p`)
-- **Huddle icon** (top right): off by default; on = browse + advertise on local network. Stays on in the background until you turn it off, force-quit, or the auto-off timer (General, default 30 minutes). At most one local iOS notification per launch, and only after lock or a full minute off-screen.
+- **Huddle icon** (top right): off by default; on = browse + advertise on local network. Stays on in the background until you turn it off, force-quit, or the auto-off timer (Preferences, default 30 minutes). At most one local iOS notification per launch, and only after lock or a full minute off-screen.
 - **Flick up** (±60° of vertical) anywhere on the caption canvas to broadcast (finger-follow, velocity fly-off, then **Sent!**). Wrong direction → **Try again** + ↑, caption returns.
 - Incoming messages go to the **log strip** above the bottom banner — **never** the center caption.
 - **Relay messages** (Preferences): forward with TTL 4; **on by default**. Works while Huddle is on, including in the background when iOS has not suspended the process.
@@ -112,7 +112,7 @@ Theme, color mode, display name, relay flag, caption history, P2P KPI counters (
 | Bottom right | Eraser |
 | Center caption | Flick **up** (±60°) anywhere on canvas to send (Huddle on); **Sent!** / **Try again** |
 
-Day/Night and theme are **not** on the main screen — Settings → General only.
+Day/Night, theme, and font are **not** on the main screen — Settings → Preferences only.
 
 ---
 
@@ -138,11 +138,10 @@ Day/Night and theme are **not** on the main screen — Settings → General only
 | Issue | Status / fix |
 |-------|----------------|
 | **Remove Ads shows Retry / purchase unavailable** on TestFlight or device deploy | StoreKit returns empty catalog until ASC **Paid Apps** agreement is Active and IAP `ClosedCaptioner` is **Ready to Submit** with full metadata. See [`docs/agent/iap.md`](agent/iap.md). Local `.storekit` only applies to Xcode Run. |
-| **`README.md` feature list** | Stale (pre-theme, pre-P2P). Use **this file** as source of truth until README is refreshed. |
 | **Export** | `ExportManager` implemented; no user-facing export action. |
 | **Speech locale** | Hard-coded `en-US` only. |
-| **P2P** | Foreground only; no background mesh; relay is best-effort TTL hop. |
-| **Untracked** | `docs/iap-review-screenshot.png` (for ASC IAP review) — add when committing ASC assets. |
+| **Huddle / P2P** | Background keep-alive exists (`UIBackgroundTask` + audio/Bluetooth modes) with auto-off timer; iOS may still suspend. Relay is best-effort TTL hop. |
+| **ASC assets** | Prefer Desktop `Closed Captioner Assets/output/processed_screenshots/1242x2688` for store screenshots. |
 
 No automated test target in the Xcode project.
 
@@ -163,7 +162,6 @@ No automated test target in the Xcode project.
 - Harden relay / duplicate handling under load; document limits in UI if needed.
 
 **Housekeeping**
-- Align `README.md` with this steering doc.
 - Add unit tests for `HistoryManager`, `PremiumManager` product-ID mapping, P2P envelope parsing.
 
 ---

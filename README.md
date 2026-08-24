@@ -1,104 +1,76 @@
-# ClosedCaptioner
+# Closed Captioner
 
-A native iOS app for real-time speech-to-text closed captioning.
+Native iOS app for live speech-to-text captions in portrait. Speak into the mic, see large on-screen text, edit, save history, and optionally share nearby with **Huddle**.
 
-**→ Current features, architecture, known issues, and roadmap:** [`docs/STEERING.md`](docs/STEERING.md)
+**→ Full product map (features, architecture, ops, known issues):** [`docs/STEERING.md`](docs/STEERING.md)
 
-## Features
+| Item | Value |
+|------|-------|
+| Display name | Closed Captioner |
+| Bundle ID | `RaveSociety.ClosedCaptioner` |
+| Min iOS | 16.4 |
+| Marketing version | 1.2 |
+| Architecture | MVVM |
 
-- 🎤 **Real-time Speech Recognition**: Tap the mic button to speak and get instant text transcription (auto-stops after 15 seconds)
-- 🌓 **Three Display Modes**: 
-  - **Day Mode**: White background, black text
-  - **Night Mode**: Black background, white text (default)
-  - **Discreet Mode**: Low-contrast for privacy
-- ⌨️ **Text Editor**: Full keyboard support to edit transcribed text
-- ✨ **Smart Emojis**: Automatic emoji detection based on text content using Natural Language framework
-- 🎨 **Beautiful UI**: Large, bold text optimized for readability in portrait mode
-- 🗑️ **Quick Erase**: Tap erase button for quick screen clearing with "✨Poof!!!✨" animation
-- 📝 **Caption History**: Track and recall previous captions with timestamps
-- 💾 **Export Functionality**: Export captions to text, PDF, HTML (available via ExportManager)
-- 🎲 **Shake for Fun**: Shake device to replace text with pickup lines (when mic is off)
+## Features (1.2)
 
-## Controls (Portrait Mode)
+- **Live captions** (English `en-US`): long-press mic to start/stop; auto-stops after 15 seconds
+- **Appearance**: Day / Night in Settings → Preferences; six themes (Grove default, Harbor, Ember, Ink, Dusk, Stealth)
+- **Fonts**: System, New York, Avenir Next, Futura, Rounded
+- **Keyboard edit**, eraser with Poof animation, caption history in Activity → Captions
+- **Optional emojis** after speech settles (Preferences → Captions; off by default, experimental)
+- **Shake** (mic off): pickup line; 5s cooldown
+- **Huddle** (nearby Multipeer `cc-p2p`): share captions over the local network; flick up on the canvas to send; incoming messages stay in the log strip, never the main caption
+- **Settings**: Preferences, KPIs, Activity (Captions + Huddle), Purchases
+- **Ads** (AdMob banners + interstitials) with optional **Remove Ads** one-time IAP (`ClosedCaptioner`)
 
-- **Top Left**: Settings (History + Purchases)
-- **Top Right**: Display mode selector (Day/Night/Discreet)
-- **Bottom Left**: Keyboard toggle
-- **Bottom Center**: Microphone (tap to start recording, tap again to stop; auto-stops after 15 seconds)
-- **Bottom Right**: Erase/Clear screen
+Export to text / PDF / HTML exists in code (`ExportManager`) but is not exposed in the UI yet.
 
-## Architecture
+## Main screen controls
 
-The app follows MVVM (Model-View-ViewModel) architecture for scalability and maintainability:
+| Location | Action |
+|----------|--------|
+| Top left | Settings |
+| Top right | Huddle (off: Tap to join; on: ↓/↑ B/s) |
+| Bottom left | Keyboard |
+| Bottom center | Mic (long-press start/stop) |
+| Bottom right | Eraser |
+| Caption canvas | Flick up (±60°) to send when Huddle is on |
+
+Day/Night, theme, and font live in **Settings → Preferences**, not on the main screen.
+
+## Architecture (high level)
 
 ```
-ClosedCaptioner/
-├── Models/              # Data models
-│   ├── ColorMode.swift
-│   └── CaptionText.swift
-├── Services/            # Business logic
-│   ├── AudioService.swift
-│   ├── SpeechService.swift
-│   ├── EmojiService.swift
-│   ├── PickupLineService.swift
-│   └── ShakeDetectionService.swift
-├── ViewModels/          # UI state management
-│   └── AppStateViewModel.swift
-├── Views/               # UI components
-│   ├── ContentView.swift
-│   ├── CaptionTextDisplay.swift
-│   ├── ControlsView.swift
-│   ├── HistoryView.swift
-│   ├── KeyboardEditView.swift
-│   └── DoneButton.swift
-├── Controllers/         # Feature controllers
-│   └── MicController.swift
-├── Interfaces/          # Protocol definitions
-│   └── MicControlProtocol.swift
-├── Managers/           # Feature managers
-│   ├── HistoryManager.swift
-│   └── ExportManager.swift
-└── Assets.xcassets/     # Images and colors
+ContentView
+├── SpeechService / MicController
+├── AppStateViewModel (theme, day/night, overlays, Huddle prefs)
+├── HistoryManager
+├── P2PInboxService (Huddle)
+├── PremiumManager (StoreKit 2)
+└── ControlsView (chrome, banners, Huddle HUD)
+
+Settings → Preferences | KPIs | Activity | Purchases
 ```
 
-## Future Features (Architecture Ready)
-
-- 🌍 **Multi-language Support**: Support for multiple languages
-- ⚙️ **Customization**: Font sizes, colors, display options
-- 📊 **Analytics**: Track transcription accuracy and usage
+Details and file map: [`docs/STEERING.md`](docs/STEERING.md).
 
 ## Setup
 
-1. Open the project in Xcode
-2. Build and run on an iOS device
-3. Grant microphone and speech recognition permissions when prompted
-4. App runs in portrait mode (optimized for vertical viewing)
+1. Open `ClosedCaptioner.xcodeproj` in Xcode
+2. Select the `ClosedCaptioner` scheme
+3. Run on a device (speech recognition needs a real device for best results)
+4. Grant microphone and speech recognition when prompted
+5. For local IAP testing: scheme Run → Options → StoreKit Configuration = `ClosedCaptioner.storekit`
+
+Agent docs (deploy, Xcode Cloud, IAP, AdMob, Huddle test): [`AGENTS.md`](AGENTS.md)
 
 ## Requirements
 
 - iOS 16.4+
-- iPhone or iPad
-- Microphone access
-- Speech recognition access
-
-## Technology Stack
-
-- **SwiftUI** - Modern declarative UI framework
-- **AVFoundation** - Audio processing and microphone access
-- **Speech** - Speech recognition framework
-- **NaturalLanguage** - Intelligent emoji detection and sentiment analysis
-- **CoreMotion** - Accelerometer data for shake detection
-- **MVVM Architecture** - Clean, testable, maintainable code
-
-## Development
-
-The codebase is organized for:
-- Easy feature additions
-- Unit testing
-- Code reusability
-- Scalability
+- Microphone and speech recognition
+- Local Network (optional, for Huddle)
 
 ## License
 
 MIT
-
