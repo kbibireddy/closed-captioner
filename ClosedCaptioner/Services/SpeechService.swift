@@ -91,6 +91,13 @@ class SpeechService: ObservableObject {
             AppLog.debug("[SpeechService] WARNING: Already recording, stopping first")
             stopRecognition()
         }
+
+        do {
+            try AudioService.shared.activateForRecording()
+        } catch {
+            AppLog.debug("[SpeechService] ERROR: Audio session could not start: \(error)")
+            return false
+        }
         
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
@@ -169,6 +176,7 @@ class SpeechService: ObservableObject {
     /// Drops a half-started session without emoji side effects.
     private func abortFailedStart() {
         teardownEngine()
+        AudioService.shared.deactivateAfterRecording()
         isRecording = false
         textIsFromSpeech = false
     }
@@ -201,6 +209,7 @@ class SpeechService: ObservableObject {
         
         isRecording = false
         teardownEngine()
+        AudioService.shared.deactivateAfterRecording()
         
         if textIsFromSpeech
             && emojiDetectionEnabled

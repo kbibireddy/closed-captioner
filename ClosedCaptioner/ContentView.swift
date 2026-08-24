@@ -12,7 +12,7 @@ import UIKit
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var speechService = SpeechService()
+    @StateObject private var speechService: SpeechService
     @StateObject private var appState = AppStateViewModel()
     @StateObject private var micController: MicController
     @StateObject private var historyManager = HistoryManager.shared
@@ -121,7 +121,6 @@ struct ContentView: View {
             p2pInbox.applyAutoStopAfter(appState.radioKeepAlive.duration)
             speechService.emojiDetectionEnabled = appState.emojiDetectionEnabled
             radioIsOn = p2pInbox.isListening
-            setupAudioSession()
             requestPermissions()
             previousRecordingState = micController.isRecording
             updateShakeMonitoring()
@@ -200,18 +199,8 @@ struct ContentView: View {
         }
     }
 
-    /// Sets up the audio session for recording
-    private func setupAudioSession() {
-        do {
-            try AudioService.shared.setupAudioSession()
-        } catch {
-            AppLog.debug("[ContentView] ERROR: Failed to setup audio session: \(error)")
-        }
-    }
-    
-    /// Requests microphone, speech recognition, and notification permissions
+    /// Requests microphone and speech recognition. Huddle notifications wait until radio on.
     private func requestPermissions() {
-        NearbyMeshNotice.requestPermissionIfNeeded()
         AudioService.shared.requestMicrophonePermission { allowed in
             if allowed {
                 DispatchQueue.main.async {

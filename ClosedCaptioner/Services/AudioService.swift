@@ -11,17 +11,29 @@ import AVFoundation
 class AudioService {
     /// Shared singleton instance
     static let shared = AudioService()
-    
+
     private init() {}
-    
-    /// Configures the audio session for recording and playback
-    /// - Throws: An error if the audio session cannot be configured
-    func setupAudioSession() throws {
+
+    /// Arms the session for speech recognition. Call only when recording starts.
+    func activateForRecording() throws {
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetoothHFP])
+        try audioSession.setCategory(
+            .playAndRecord,
+            mode: .measurement,
+            options: [.defaultToSpeaker, .allowBluetoothHFP]
+        )
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
     }
-    
+
+    /// Releases the session after recognition ends so other audio can resume.
+    func deactivateAfterRecording() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            AppLog.debug("[AudioService] Deactivate failed: \(error)")
+        }
+    }
+
     /// Requests microphone permission from the user
     /// - Parameter completion: Callback with true if permission granted, false otherwise
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
@@ -32,4 +44,3 @@ class AudioService {
         }
     }
 }
-
