@@ -18,6 +18,8 @@ final class PremiumManager: ObservableObject {
     @Published private(set) var purchaseInProgress = false
     @Published private(set) var purchasingProductID: String?
     @Published private(set) var productsLoaded = false
+    /// True after ATT has been prompted (or skipped) and AdMob start was requested.
+    @Published private(set) var adsStarted = false
     @Published var errorMessage: String?
 
     private var transactionListener: Task<Void, Never>?
@@ -32,8 +34,14 @@ final class PremiumManager: ObservableObject {
         Task {
             await loadProducts()
             await refreshEntitlements()
+            // AdMob starts from ContentView after ATT (prepareForForeground).
             AdsBootstrap.configureAdsIfNeeded(isPremium: isPremium)
         }
+    }
+
+    @MainActor
+    func markAdsStarted() {
+        adsStarted = true
     }
 
     func product(for definition: IAPProductDefinition) -> Product? {

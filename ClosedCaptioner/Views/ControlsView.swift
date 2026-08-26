@@ -18,6 +18,7 @@ struct ControlsView: View {
 
     private var showBanners: Bool {
         !premiumManager.isPremium
+            && premiumManager.adsStarted
             && !appState.showSettings
             && !appState.showKeyboard
     }

@@ -121,9 +121,12 @@ struct ContentView: View {
             p2pInbox.applyAutoStopAfter(appState.radioKeepAlive.duration)
             speechService.emojiDetectionEnabled = appState.emojiDetectionEnabled
             radioIsOn = p2pInbox.isListening
-            requestPermissions()
             previousRecordingState = micController.isRecording
             updateShakeMonitoring()
+            // ATT before AdMob (and before mic/speech alerts) so App Review sees tracking prompt.
+            AdsBootstrap.prepareForForeground(isPremium: PremiumManager.shared.isPremium) {
+                requestPermissions()
+            }
         }
         .onReceive(p2pInbox.chrome.$isListening) { radioIsOn = $0 }
         .onChange(of: appState.relayMessages) { enabled in

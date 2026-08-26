@@ -55,7 +55,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 ### Monetization
 - **Banners**: top + bottom adaptive AdMob units in `ControlsView` VStack (never over buttons).
 - **Interstitials**: every 3rd mic stop; after closing Activity → Captions (non-premium).
-- **ATT**: deferred until first ad-related user action (`AdsBootstrap.requestTrackingIfNeeded`).
+- **ATT**: prompted shortly after first foreground (before AdMob start / banners) via `AdsBootstrap.prepareForForeground`.
 - **Remove Ads**: product ID `ClosedCaptioner` (non-consumable). Premium hides all ads.
 
 ### Built but not in UI
