@@ -110,7 +110,7 @@ struct ContentView: View {
             if previousRecordingState && !newValue {
                 let allowPresent = !appState.showSettings
                     && !appState.showKeyboard
-                    && !PremiumManager.shared.isPremium
+                    && !PremiumManager.shared.adsSuppressed
                 InterstitialCoordinator.shared.recordMicStop(allowPresent: allowPresent)
             }
             // Update previous state to track transitions
@@ -124,7 +124,7 @@ struct ContentView: View {
             previousRecordingState = micController.isRecording
             updateShakeMonitoring()
             // ATT before AdMob (and before mic/speech alerts) so App Review sees tracking prompt.
-            AdsBootstrap.prepareForForeground(isPremium: PremiumManager.shared.isPremium) {
+            AdsBootstrap.prepareForForeground(isPremium: PremiumManager.shared.adsSuppressed) {
                 requestPermissions()
             }
         }

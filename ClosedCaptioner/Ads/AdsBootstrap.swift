@@ -25,7 +25,7 @@ enum AdsBootstrap {
             // ATT requires an active key window; brief delay after becoming active.
             try? await Task.sleep(nanoseconds: 800_000_000)
 
-            if PremiumManager.shared.isPremium || isPremium {
+            if PremiumManager.shared.adsSuppressed || isPremium {
                 onReady?()
                 return
             }

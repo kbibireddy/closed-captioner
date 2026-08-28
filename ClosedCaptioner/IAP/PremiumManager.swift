@@ -29,13 +29,25 @@ final class PremiumManager: ObservableObject {
         ownedProductIDs.contains(IAPConfig.removeAdsProductID)
     }
 
+    /// Paid remove-ads **or** still inside the first 30 days after install.
+    var adsSuppressed: Bool {
+        isPremium || InstallGracePeriod.isActive
+    }
+
+    /// Settings → Purchases is hidden only during the install grace window.
+    var shouldShowPurchasesTab: Bool {
+        !InstallGracePeriod.isActive
+    }
+
     private init() {
+        // Pin install date early so grace checks stay stable for the process.
+        _ = InstallGracePeriod.installDate
         transactionListener = listenForTransactions()
         Task {
             await loadProducts()
             await refreshEntitlements()
             // AdMob starts from ContentView after ATT (prepareForForeground).
-            AdsBootstrap.configureAdsIfNeeded(isPremium: isPremium)
+            AdsBootstrap.configureAdsIfNeeded(isPremium: adsSuppressed)
         }
     }
 
@@ -95,11 +107,11 @@ final class PremiumManager: ObservableObject {
             owned.insert(transaction.productID)
         }
 
-        let wasPremium = isPremium
+        let wasSuppressed = adsSuppressed
         ownedProductIDs = owned
 
-        if wasPremium != isPremium {
-            AdsBootstrap.configureAdsIfNeeded(isPremium: isPremium)
+        if wasSuppressed != adsSuppressed {
+            AdsBootstrap.configureAdsIfNeeded(isPremium: adsSuppressed)
         }
     }
 

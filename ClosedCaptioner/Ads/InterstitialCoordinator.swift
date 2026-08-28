@@ -15,13 +15,13 @@ final class InterstitialCoordinator {
     private init() {}
 
     func prepare() {
-        guard !PremiumManager.shared.isPremium else { return }
+        guard !PremiumManager.shared.adsSuppressed else { return }
         manager.load()
     }
 
     /// Show interstitial after closing history (best-effort if not yet loaded).
     func presentAfterHistoryClose() {
-        guard !PremiumManager.shared.isPremium else { return }
+        guard !PremiumManager.shared.adsSuppressed else { return }
         if AdsBootstrap.requestTrackingIfNeeded() {
             manager.load()
             return
@@ -31,7 +31,7 @@ final class InterstitialCoordinator {
 
     /// Count a mic stop; present interstitial every 3rd stop when allowed.
     func recordMicStop(allowPresent: Bool) {
-        guard !PremiumManager.shared.isPremium else { return }
+        guard !PremiumManager.shared.adsSuppressed else { return }
         AdsBootstrap.requestTrackingIfNeeded()
         micStopCount += 1
         guard allowPresent, micStopCount % 3 == 0 else { return }

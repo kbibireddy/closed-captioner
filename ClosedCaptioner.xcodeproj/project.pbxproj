@@ -39,6 +39,7 @@
 		EB6760152EAF5000000001 /* AdsBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760052EAF5000000001 /* AdsBootstrap.swift */; };
 		EB6760162EAF5000000001 /* IAPConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760062EAF5000000001 /* IAPConfig.swift */; };
 		EB6760172EAF5000000001 /* PremiumManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760072EAF5000000001 /* PremiumManager.swift */; };
+		EB6790202EAF9000000002 /* InstallGracePeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6790212EAF9000000002 /* InstallGracePeriod.swift */; };
 		EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760082EAF5000000001 /* PremiumSheetView.swift */; };
 		EB6760402EAF6000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760412EAF6000000001 /* SettingsView.swift */; };
 		EB6760422EAF6000000001 /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760432EAF6000000001 /* PurchasesView.swift */; };
@@ -85,6 +86,7 @@
 		EB6760052EAF5000000001 /* AdsBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdsBootstrap.swift; sourceTree = "<group>"; };
 		EB6760062EAF5000000001 /* IAPConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPConfig.swift; sourceTree = "<group>"; };
 		EB6760072EAF5000000001 /* PremiumManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumManager.swift; sourceTree = "<group>"; };
+		EB6790212EAF9000000002 /* InstallGracePeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstallGracePeriod.swift; sourceTree = "<group>"; };
 		EB6760082EAF5000000001 /* PremiumSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheetView.swift; sourceTree = "<group>"; };
 		EB6760412EAF6000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EB6760432EAF6000000001 /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 			children = (
 				EB6760062EAF5000000001 /* IAPConfig.swift */,
 				EB6760072EAF5000000001 /* PremiumManager.swift */,
+				EB6790212EAF9000000002 /* InstallGracePeriod.swift */,
 			);
 			path = IAP;
 			sourceTree = "<group>";
@@ -366,6 +369,7 @@
 				EB6760132EAF5000000001 /* InterstitialCoordinator.swift in Sources */,
 				EB6760162EAF5000000001 /* IAPConfig.swift in Sources */,
 				EB6760172EAF5000000001 /* PremiumManager.swift in Sources */,
+				EB6790202EAF9000000002 /* InstallGracePeriod.swift in Sources */,
 				EB6760182EAF5000000001 /* PremiumSheetView.swift in Sources */,
 				EB6760402EAF6000000001 /* SettingsView.swift in Sources */,
 				EB6760422EAF6000000001 /* PurchasesView.swift in Sources */,

@@ -12,6 +12,12 @@ Closed Captioner sells one non-consumable: **Remove Ads**.
 | Code | `ClosedCaptioner/IAP/IAPConfig.swift` |
 | Local StoreKit file | `ClosedCaptioner.storekit` (Xcode **Run** only) |
 
+## First 30 days (install grace)
+
+New installs get **30 calendar days** with **no ads** and **Purchases tab hidden**. After that, banners/interstitials and Settings → Purchases behave as usual.
+
+Install day comes from the app Documents folder creation date when possible (survives updates), then is stored in `UserDefaults` (`ClosedCaptioner.installDate`). Code: `InstallGracePeriod` + `PremiumManager.adsSuppressed`.
+
 ## Why Purchases shows Retry
 
 `Product.products(for:)` returns an **empty list** (it does not throw) when Apple does not know that product ID for this app. The UI then shows **Retry** / purchase unavailable.

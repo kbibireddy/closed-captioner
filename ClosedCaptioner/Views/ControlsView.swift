@@ -17,7 +17,7 @@ struct ControlsView: View {
     let onClear: () -> Void
 
     private var showBanners: Bool {
-        !premiumManager.isPremium
+        !premiumManager.adsSuppressed
             && premiumManager.adsStarted
             && !appState.showSettings
             && !appState.showKeyboard

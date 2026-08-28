@@ -98,7 +98,7 @@ struct SettingsView: View {
                 onAction: {
                     let wasOnCaptions = selectedTab == .activity && activityShowsCaptions
                     appState.closeSettings()
-                    guard wasOnCaptions, !PremiumManager.shared.isPremium else { return }
+                    guard wasOnCaptions, !PremiumManager.shared.adsSuppressed else { return }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         InterstitialCoordinator.shared.presentAfterHistoryClose()
                     }
@@ -110,9 +110,18 @@ struct SettingsView: View {
         .padding(.bottom, 8)
     }
 
+    private var visibleTabs: [SettingsTab] {
+        SettingsTab.allCases.filter { tab in
+            if tab == .purchases {
+                return PremiumManager.shared.shouldShowPurchasesTab
+            }
+            return true
+        }
+    }
+
     private var settingsTabBar: some View {
         HStack(spacing: 3) {
-            ForEach(SettingsTab.allCases) { tab in
+            ForEach(visibleTabs) { tab in
                 Button {
                     selectedTab = tab
                 } label: {
@@ -152,6 +161,11 @@ struct SettingsView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 12)
+        .onAppear {
+            if selectedTab == .purchases, !PremiumManager.shared.shouldShowPurchasesTab {
+                selectedTab = .general
+            }
+        }
     }
 }
 
