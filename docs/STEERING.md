@@ -14,7 +14,7 @@ Native **iOS 16.4+** SwiftUI app for **live speech-to-text captions** in portrai
 | Scheme / target | `ClosedCaptioner` |
 | Bundle ID | `RaveSociety.ClosedCaptioner` |
 | Team | RaveSociety (`66R936J3XS`) |
-| Marketing version | **1.2** (`MARKETING_VERSION` in Xcode) |
+| Marketing version | **1.2.1** (`MARKETING_VERSION` in Xcode) |
 | Build number | Xcode Cloud `CI_BUILD_NUMBER` at archive time |
 | Repo | `kbibireddy/closed-captioner` · branch `main` |
 | ASC app | [6754772689](https://appstoreconnect.apple.com/apps/6754772689) |
