@@ -160,6 +160,10 @@ struct ContentView: View {
                 keepAlive: appState.radioKeepAlive
             )
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // B5: fires earlier than .active scenePhase, catches deep suspend restores.
+            p2pInbox.rebuildSessionIfListening()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             NearbyMeshNotice.noteBecameActive()
         }

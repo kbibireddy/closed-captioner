@@ -155,6 +155,14 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var kpiHistoryTimer: Timer?
     private var lastFastKPIHistoryAt: Date?
     private var lastSlowKPIHistoryAt: Date?
+    /// Tracks peers that were connected and dropped — candidates for re-invite.
+    private var recentlyDroppedPeers: [MCPeerID: Date] = [:]
+    /// How many times browse/advertise has been retried after a transient failure.
+    private var browseRetryCount = 0
+    /// Health-check timer: detects stale sessions and restarts browse/advertise.
+    private var healthCheckTimer: Timer?
+    /// Timestamp when peers last dropped to zero (for stale-session detection).
+    private var zeroPeersSince: Date?
     #if os(iOS)
     private var backgroundTask = UIBackgroundTaskIdentifier.invalid
     #endif
@@ -193,14 +201,16 @@ final class P2PInboxService: NSObject, ObservableObject {
         listeningStartedAt = Date()
         scheduleAutoStop()
         startKPIHistory()
+        startHealthCheck()
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = true
         NearbyMeshNotice.requestPermissionIfNeeded()
         #endif
     }
 
-    /// Rebuild after returning from background. No-op if the session is already up
-    /// (e.g. Control Center → `.inactive` → `.active` without a suspend).
+    /// Rebuild after returning from background. Checks session *health*, not just
+    /// whether the object exists — MC can freeze internals during a long suspend
+    /// while leaving the MCSession object non-nil.
     func rebuildSessionIfListening() {
         stopBackgroundTask()
         checkAutoStopIfNeeded()
@@ -208,9 +218,30 @@ final class P2PInboxService: NSObject, ObservableObject {
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = true
         #endif
-        guard session == nil else { return }
-        startSession(resetStats: false)
-        scheduleAutoStop()
+
+        let needsRebuild: Bool
+        if session == nil {
+            // Session was torn down (B1-classic path).
+            needsRebuild = true
+            AppLog.debug("[P2P] Foreground rebuild: session was nil")
+        } else if browser == nil || advertiser == nil {
+            // Browse/advertise died (e.g. transient error killed them).
+            needsRebuild = true
+            AppLog.debug("[P2P] Foreground rebuild: browser or advertiser missing")
+        } else {
+            needsRebuild = false
+        }
+
+        if needsRebuild {
+            startSession(resetStats: false)
+            scheduleAutoStop()
+        } else {
+            // Session object exists but MC may be stale after a long suspend.
+            // Restart browse/advertise to re-discover peers quickly.
+            restartBrowseAdvertise()
+        }
+        browseRetryCount = 0
+        startHealthCheck()
     }
 
     /// Keep browse / advertise / session running while the app is backgrounded.
@@ -218,6 +249,7 @@ final class P2PInboxService: NSObject, ObservableObject {
     func prepareForBackground() {
         guard isListening else { return }
         checkAutoStopIfNeeded()
+        stopHealthCheck()
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = false
         startBackgroundTask()
@@ -235,6 +267,10 @@ final class P2PInboxService: NSObject, ObservableObject {
         autoStopTimer = nil
         listeningStartedAt = nil
         stopBackgroundTask()
+        stopHealthCheck()
+        recentlyDroppedPeers.removeAll()
+        browseRetryCount = 0
+        zeroPeersSince = nil
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = false
         NearbyMeshNotice.clear()
@@ -276,6 +312,8 @@ final class P2PInboxService: NSObject, ObservableObject {
     private func startBackgroundTask() {
         stopBackgroundTask()
         backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "nearby-radio") { [weak self] in
+            // B6: iOS is about to suspend us. Log it so KPIs/debug show what happened.
+            AppLog.debug("[P2P] Background task expiring — iOS will suspend shortly")
             self?.stopBackgroundTask()
         }
     }
@@ -395,6 +433,123 @@ final class P2PInboxService: NSObject, ObservableObject {
         lastFastKPIHistoryAt = nil
         lastSlowKPIHistoryAt = nil
     }
+
+    // MARK: - Reconnection resilience
+
+    /// Restart browse + advertise on the existing session without tearing down
+    /// connections. Useful when returning from background or after a network blip.
+    private func restartBrowseAdvertise() {
+        guard isListening, let session else { return }
+        browser?.stopBrowsingForPeers()
+        browser?.delegate = nil
+        advertiser?.stopAdvertisingPeer()
+        advertiser?.delegate = nil
+
+        let newBrowser = MCNearbyServiceBrowser(peer: peerID, serviceType: P2PConfig.serviceType)
+        newBrowser.delegate = self
+        self.browser = newBrowser
+
+        let newAdvertiser = MCNearbyServiceAdvertiser(
+            peer: peerID,
+            discoveryInfo: [
+                P2PConfig.discoveryRoleKey: P2PConfig.discoveryRoleEmitter,
+                P2PConfig.discoveryPeerIDKey: instanceID
+            ],
+            serviceType: P2PConfig.serviceType
+        )
+        newAdvertiser.delegate = self
+        self.advertiser = newAdvertiser
+
+        // Reset invite bookkeeping so stale entries don't block new invites.
+        invitedPeerIDs.removeAll()
+        inviteAttempts.removeAll()
+
+        newBrowser.startBrowsingForPeers()
+        newAdvertiser.startAdvertisingPeer()
+        AppLog.debug("[P2P] Restarted browse + advertise (session kept)")
+    }
+
+    /// Attempt to reconnect to a peer that was connected and then dropped.
+    private func scheduleReconnect(_ droppedPeer: MCPeerID) {
+        guard isListening else { return }
+        recentlyDroppedPeers[droppedPeer] = Date()
+        let delay = P2PConfig.reconnectDelaySeconds
+        AppLog.debug("[P2P] Will attempt reconnect to \(droppedPeer.displayName) in \(Int(delay))s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.isListening, let browser = self.browser else { return }
+            // Only re-invite if they haven't already reconnected.
+            guard self.session?.connectedPeers.contains(droppedPeer) != true else {
+                self.recentlyDroppedPeers.removeValue(forKey: droppedPeer)
+                return
+            }
+            guard !self.neighborSlotsFull() else { return }
+            // Reset retry count so we get fresh attempts.
+            self.inviteAttempts[droppedPeer] = 0
+            self.invite(droppedPeer, using: browser)
+            AppLog.debug("[P2P] Re-inviting dropped peer \(droppedPeer.displayName)")
+        }
+    }
+
+    // MARK: - Health check (B4)
+
+    private func startHealthCheck() {
+        stopHealthCheck()
+        let timer = Timer(timeInterval: P2PConfig.healthCheckIntervalSeconds, repeats: true) { [weak self] _ in
+            self?.performHealthCheck()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        healthCheckTimer = timer
+    }
+
+    private func stopHealthCheck() {
+        healthCheckTimer?.invalidate()
+        healthCheckTimer = nil
+    }
+
+    private func performHealthCheck() {
+        guard isListening else { return }
+        let peerCount = session?.connectedPeers.count ?? 0
+        refreshPeerCount()
+
+        if peerCount == 0 {
+            if zeroPeersSince == nil {
+                zeroPeersSince = Date()
+            } else if let since = zeroPeersSince,
+                      Date().timeIntervalSince(since) >= P2PConfig.staleSessionThresholdSeconds {
+                // Peers have been at 0 too long — restart browse/advertise
+                // to shake off any stale Bonjour state.
+                AppLog.debug("[P2P] Health check: 0 peers for \(Int(P2PConfig.staleSessionThresholdSeconds))s, restarting browse/advertise")
+                zeroPeersSince = nil
+                restartBrowseAdvertise()
+            }
+        } else {
+            zeroPeersSince = nil
+        }
+
+        // Prune stale dropped-peer entries (older than 30s — they're gone).
+        let cutoff = Date().addingTimeInterval(-30)
+        recentlyDroppedPeers = recentlyDroppedPeers.filter { $0.value > cutoff }
+    }
+
+    // MARK: - Browse/advertise failure recovery (B3)
+
+    private func handleBrowseAdvertiseFailure() {
+        guard isListening else { return }
+        browseRetryCount += 1
+        if browseRetryCount > P2PConfig.browseRetryLimit {
+            AppLog.debug("[P2P] Exceeded browse retry limit (\(P2PConfig.browseRetryLimit)), stopping radio")
+            stopListening()
+            return
+        }
+        let delay = P2PConfig.browseRetryDelaySeconds * Double(browseRetryCount)
+        AppLog.debug("[P2P] Browse/advertise retry \(browseRetryCount)/\(P2PConfig.browseRetryLimit) in \(Int(delay))s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.isListening else { return }
+            self.restartBrowseAdvertise()
+        }
+    }
+
+    // MARK: - Traffic
 
     private func recordTraffic(sent: Int, received: Int) {
         if sent > 0 { metrics.bytesSent += sent }
@@ -658,7 +813,7 @@ extension P2PInboxService: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
         AppLog.debug("[P2P] Browser failed: \(error.localizedDescription)")
         DispatchQueue.main.async {
-            self.stopListening()
+            self.handleBrowseAdvertiseFailure()
         }
     }
 }
@@ -686,6 +841,9 @@ extension P2PInboxService: MCNearbyServiceAdvertiserDelegate {
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
         AppLog.debug("[P2P] Advertise failed: \(error.localizedDescription)")
+        DispatchQueue.main.async {
+            self.handleBrowseAdvertiseFailure()
+        }
     }
 }
 
@@ -695,12 +853,15 @@ extension P2PInboxService: MCSessionDelegate {
             switch state {
             case .notConnected:
                 let wasInviting = self.invitedPeerIDs.contains(peerID)
+                let wasConnected = self.knownConnected.contains(peerID)
                 self.invitedPeerIDs.remove(peerID)
-                if self.knownConnected.contains(peerID) {
+                if wasConnected {
                     self.knownConnected.remove(peerID)
                     self.metrics.disconnectCount += 1
+                    // B2: A connected peer dropped — try to re-invite them.
+                    self.scheduleReconnect(peerID)
                 }
-                if wasInviting {
+                if wasInviting && !wasConnected {
                     self.retryInviteIfNeeded(peerID)
                 }
             case .connecting:
@@ -708,6 +869,9 @@ extension P2PInboxService: MCSessionDelegate {
             case .connected:
                 self.invitedPeerIDs.remove(peerID)
                 self.inviteAttempts[peerID] = 0
+                self.recentlyDroppedPeers.removeValue(forKey: peerID)
+                self.browseRetryCount = 0
+                self.zeroPeersSince = nil
                 if self.knownConnected.insert(peerID).inserted {
                     self.metrics.connectCount += 1
                 }

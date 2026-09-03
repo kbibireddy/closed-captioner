@@ -74,6 +74,20 @@ enum P2PConfig {
     static let inviteRetryDelaySeconds: TimeInterval = 1.5
     static let maxSeenIDs = 500
 
+    // --- Reconnection resilience ---
+    /// Delay before retrying after a browse/advertise failure (e.g. network blip).
+    static let browseRetryDelaySeconds: TimeInterval = 2
+    /// Maximum browse/advertise restart attempts before giving up.
+    static let browseRetryLimit = 5
+    /// How often the health check fires while radio is on to detect stale sessions.
+    static let healthCheckIntervalSeconds: TimeInterval = 10
+    /// If connected peers drops to 0 and stays there this long, restart browse/advertise.
+    static let staleSessionThresholdSeconds: TimeInterval = 15
+    /// Grace period after returning to foreground before forcing a session rebuild.
+    static let foregroundRebuildGraceSeconds: TimeInterval = 3
+    /// Delay before attempting to re-invite a peer that disconnected while connected.
+    static let reconnectDelaySeconds: TimeInterval = 2
+
     /// v1 compatible JSON. Extra fields are ignored by older decoders.
     struct Envelope: Codable, Equatable {
         var v: Int
