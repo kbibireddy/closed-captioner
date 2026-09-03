@@ -30,13 +30,15 @@ enum P2PConfig {
         var id: String?
         var hop: Int?
         var ttl: Int?
+        var channel: String?
 
         static func make(
             _ text: String,
             from: String? = nil,
             id: String = UUID().uuidString,
             hop: Int = 0,
-            ttl: Int = P2PConfig.defaultTTL
+            ttl: Int = P2PConfig.defaultTTL,
+            channel: String? = "room"
         ) -> Envelope {
             Envelope(
                 v: 1,
@@ -44,7 +46,8 @@ enum P2PConfig {
                 from: P2PConfig.normalizedName(from),
                 id: id,
                 hop: hop,
-                ttl: ttl
+                ttl: ttl,
+                channel: channel ?? "room"
             )
         }
     }
@@ -54,9 +57,10 @@ enum P2PConfig {
         from: String? = nil,
         id: String = UUID().uuidString,
         hop: Int = 0,
-        ttl: Int = P2PConfig.defaultTTL
+        ttl: Int = P2PConfig.defaultTTL,
+        channel: String? = "room"
     ) -> Data? {
-        try? JSONEncoder().encode(Envelope.make(text, from: from, id: id, hop: hop, ttl: ttl))
+        try? JSONEncoder().encode(Envelope.make(text, from: from, id: id, hop: hop, ttl: ttl, channel: channel))
     }
 
     static func decode(_ data: Data) -> Envelope? {
@@ -70,13 +74,14 @@ enum P2PConfig {
                 from: normalizedName(envelope.from),
                 id: envelope.id,
                 hop: envelope.hop,
-                ttl: envelope.ttl
+                ttl: envelope.ttl,
+                channel: envelope.channel ?? "room"
             )
         }
         let raw = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard let raw, !raw.isEmpty else { return nil }
-        return Envelope(v: 1, text: raw, from: nil, id: nil, hop: nil, ttl: nil)
+        return Envelope(v: 1, text: raw, from: nil, id: nil, hop: nil, ttl: nil, channel: "room")
     }
 
     static func normalizedName(_ name: String?) -> String? {

@@ -9,7 +9,7 @@ struct GeneralSettingsView: View {
     @ObservedObject var appState: AppStateViewModel
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 28) {
                 userInfoSection
                 captionsSection
@@ -19,7 +19,9 @@ struct GeneralSettingsView: View {
                 fontSection
             }
             .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .verticalScrollLocked()
         .background(appState.colors.background)
         .onDisappear {
             appState.commitDisplayName()
@@ -33,7 +35,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("This name is shown on Gossip messages you send. It starts as this device’s host name.")
+            Text("This name is shown on Gossip messages you send. A random handle is assigned on first launch so your phone’s name never appears on the mesh. You can edit it anytime.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -43,26 +45,48 @@ struct GeneralSettingsView: View {
                     .font(AppType.display(13, weight: .bold))
                     .foregroundColor(appState.colors.muted)
 
-                TextField(AppStateViewModel.hostDisplayName(), text: $appState.displayName)
-                    .font(AppType.display(15, weight: .semibold))
-                    .foregroundColor(appState.colors.text)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(appState.colors.card)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
-                            .stroke(appState.colors.line, lineWidth: 1)
-                    )
-                    .onChange(of: appState.displayName) { newValue in
-                        if newValue.count > P2PConfig.maxDisplayNameLength {
-                            appState.displayName = String(newValue.prefix(P2PConfig.maxDisplayNameLength))
+                HStack(spacing: 8) {
+                    TextField("cool_handle", text: $appState.displayName)
+                        .font(AppType.display(15, weight: .semibold))
+                        .foregroundColor(appState.colors.text)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(appState.colors.card)
+                        .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                                .stroke(appState.colors.line, lineWidth: 1)
+                        )
+                        .onChange(of: appState.displayName) { newValue in
+                            if newValue.count > P2PConfig.maxDisplayNameLength {
+                                appState.displayName = String(newValue.prefix(P2PConfig.maxDisplayNameLength))
+                            }
                         }
+                        .onSubmit {
+                            appState.commitDisplayName()
+                        }
+                        .submitLabel(.done)
+
+                    Button {
+                        appState.randomizeDisplayName()
+                    } label: {
+                        Image(systemName: "dice.fill")
+                            .font(AppType.display(16, weight: .semibold))
+                            .foregroundColor(appState.colors.text)
+                            .frame(width: 44, height: 44)
+                            .background(appState.colors.buttonBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                                    .stroke(appState.colors.line, lineWidth: 1)
+                            )
                     }
-                    .onSubmit {
-                        appState.commitDisplayName()
-                    }
-                    .submitLabel(.done)
+                    .accessibilityLabel("Randomize display name")
+                }
+
+                Text("Shows as \(GossipHandle.authorLabel(senderName: appState.displayName, isLocal: false))")
+                    .font(AppType.display(12, weight: .medium))
+                    .foregroundColor(appState.colors.muted)
             }
         }
     }

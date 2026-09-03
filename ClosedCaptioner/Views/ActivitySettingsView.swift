@@ -149,14 +149,14 @@ struct HuddleLogsSettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 6)
 
-                    Text("datetime  author  from  message")
+                    Text("datetime  author  from  channel  message")
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                         .foregroundColor(appState.colors.muted)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 4)
 
                     ScrollViewReader { proxy in
-                        ScrollView {
+                        ScrollView(.vertical) {
                             LazyVStack(alignment: .leading, spacing: 0) {
                                 ForEach(Array(log.messages.enumerated()), id: \.element.id) { index, entry in
                                     if index > 0 {
@@ -170,7 +170,9 @@ struct HuddleLogsSettingsView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .verticalScrollLocked()
                         .onAppear { scrollToEnd(proxy) }
                         .onChange(of: log.messages.last?.id) { _ in
                             scrollToEnd(proxy)
@@ -202,6 +204,10 @@ struct HuddleLogsSettingsView: View {
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
                 .foregroundColor(appState.colors.muted)
             + Text("  ")
+            + Text(entry.channel.title.lowercased())
+                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .foregroundColor(appState.colors.accent)
+            + Text("  ")
             + Text(entry.text)
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
                 .foregroundColor(appState.colors.text)
@@ -209,15 +215,14 @@ struct HuddleLogsSettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel("\(stamp), \(author), from \(neighbor), \(entry.text)")
+        .accessibilityLabel("\(stamp), \(author), from \(neighbor), \(entry.channel.title), \(entry.text)")
     }
 
     private func authorLabel(for entry: P2PLogEntry) -> String {
-        let mine = P2PConfig.normalizedName(appState.displayName) ?? appState.displayName
-        if entry.senderName.caseInsensitiveCompare(mine) == .orderedSame {
-            return "You"
-        }
-        return entry.senderName
+        GossipHandle.authorLabel(
+            senderName: entry.senderName,
+            isLocal: entry.neighborName == nil
+        )
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {

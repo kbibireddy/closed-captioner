@@ -438,7 +438,8 @@ struct ContentView: View {
 
         let sent = p2pInbox.broadcast(
             speechService.currentText.trimmingCharacters(in: .whitespacesAndNewlines),
-            from: appState.displayName
+            from: appState.displayName,
+            channel: appState.gossipChannel
         )
         guard sent else {
             // Rare (radio tore down mid-flick): spring home, don’t pretend it’s a bad angle.

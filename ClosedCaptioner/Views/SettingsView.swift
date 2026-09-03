@@ -77,10 +77,12 @@ struct SettingsView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
 
                 settingsTabBar
             }
         }
+        .clipped()
     }
 
     private var header: some View {
@@ -191,7 +193,7 @@ struct KPISettingsView: View {
     ]
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Performance")
@@ -401,7 +403,9 @@ struct KPISettingsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .verticalScrollLocked()
         .background(appState.colors.background)
         .onAppear {
             performance.start()

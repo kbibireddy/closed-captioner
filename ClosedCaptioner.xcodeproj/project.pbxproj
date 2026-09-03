@@ -30,6 +30,7 @@
 		EB6790102EAF9000000001 /* ActivitySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6790112EAF9000000001 /* ActivitySettingsView.swift */; };
 		EB6750242EAF4005000000 /* pickupCatalog.txt in Resources */ = {isa = PBXBuildFile; fileRef = EB6750252EAF4005000000 /* pickupCatalog.txt */; };
 		EB6750262EAF4006000000 /* PickupLineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750272EAF4006000000 /* PickupLineService.swift */; };
+		EB6790302EB01000000001 /* GossipUsername.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6790312EB01000000001 /* GossipUsername.swift */; };
 		EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6750292EAF4007000000 /* ShakeDetectionService.swift */; };
 		EB6760102EAF5000000001 /* AdConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760002EAF5000000001 /* AdConfig.swift */; };
 		EB6760112EAF5000000001 /* BannerAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6760012EAF5000000001 /* BannerAdView.swift */; };
@@ -77,6 +78,7 @@
 		EB6790112EAF9000000001 /* ActivitySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySettingsView.swift; sourceTree = "<group>"; };
 		EB6750252EAF4005000000 /* pickupCatalog.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = pickupCatalog.txt; sourceTree = "<group>"; };
 		EB6750272EAF4006000000 /* PickupLineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupLineService.swift; sourceTree = "<group>"; };
+		EB6790312EB01000000001 /* GossipUsername.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GossipUsername.swift; sourceTree = "<group>"; };
 		EB6750292EAF4007000000 /* ShakeDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetectionService.swift; sourceTree = "<group>"; };
 		EB6760002EAF5000000001 /* AdConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdConfig.swift; sourceTree = "<group>"; };
 		EB6760012EAF5000000001 /* BannerAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerAdView.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				EB6750042EAF4000000000 /* EmojiService.swift */,
 				EB6750022EAF4000000000 /* SpeechService.swift */,
 				EB6750272EAF4006000000 /* PickupLineService.swift */,
+				EB6790312EB01000000001 /* GossipUsername.swift */,
 				EB6750292EAF4007000000 /* ShakeDetectionService.swift */,
 				EB6780712EAF9000000001 /* P2PConfig.swift */,
 				EB6780732EAF9000000001 /* P2PInboxService.swift */,
@@ -361,6 +364,7 @@
 				EB6750222EAF4004000000 /* HistoryView.swift in Sources */,
 				EB6790102EAF9000000001 /* ActivitySettingsView.swift in Sources */,
 				EB6750262EAF4006000000 /* PickupLineService.swift in Sources */,
+				EB6790302EB01000000001 /* GossipUsername.swift in Sources */,
 				EB6750282EAF4007000000 /* ShakeDetectionService.swift in Sources */,
 				EB6760102EAF5000000001 /* AdConfig.swift in Sources */,
 				EB6760152EAF5000000001 /* AdsBootstrap.swift in Sources */,

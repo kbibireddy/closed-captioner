@@ -11,7 +11,7 @@ struct PurchasesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
+            ScrollView(.vertical) {
                 LazyVStack(spacing: 14) {
                     ForEach(IAPConfig.catalog) { item in
                         PurchaseProductRow(
@@ -22,7 +22,9 @@ struct PurchasesView: View {
                     }
                 }
                 .padding(20)
+                .frame(maxWidth: .infinity)
             }
+            .verticalScrollLocked()
 
             Button {
                 Task { await premiumManager.restorePurchases() }

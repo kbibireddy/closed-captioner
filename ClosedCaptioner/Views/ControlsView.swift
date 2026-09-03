@@ -43,6 +43,9 @@ struct ControlsView: View {
                 .layoutPriority(1)
                 .zIndex(9)
 
+            GossipChannelBar(appState: appState, inbox: p2pInbox)
+                .layoutPriority(1)
+
             if showBanners {
                 BannerAdView(adUnitID: AdConfig.bottomBannerAdUnitID)
                     .padding(.bottom, 4)
@@ -59,27 +62,34 @@ struct ControlsView: View {
     }
 
     private var bottomBar: some View {
-        HStack {
+        let controlSize: CGFloat = 52
+        return HStack {
             Button(action: {
                 appState.toggleKeyboard()
             }) {
                 Image(systemName: "keyboard")
                     .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(appState.colors.text)
-                    .appChromeButton(for: appState.colors)
+                    .frame(width: controlSize, height: controlSize)
+                    .background(appState.colors.buttonBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
+                    )
             }
             .accessibilityLabel("Keyboard")
 
             Spacer()
 
             Image(systemName: micController.isRecording ? "stop.fill" : "mic.fill")
-                .font(AppType.display(22, weight: .bold))
+                .font(AppType.display(20, weight: .bold))
                 .foregroundColor(
                     micController.isRecording
                         ? .white
                         : appState.colors.onAccentFill
                 )
-                .frame(width: 64, height: 64)
+                .frame(width: controlSize, height: controlSize)
                 .background(
                     micController.isRecording
                         ? appState.colors.danger
@@ -91,8 +101,8 @@ struct ControlsView: View {
                 )
                 .shadow(
                     color: appState.colors.cardShadow,
-                    radius: micController.isRecording ? 0 : 12,
-                    y: 6
+                    radius: micController.isRecording ? 0 : 10,
+                    y: 5
                 )
                 .contentShape(Circle())
                 .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { _ in
@@ -111,7 +121,13 @@ struct ControlsView: View {
                 Image(systemName: "eraser.fill")
                     .font(AppType.display(18, weight: .semibold))
                     .foregroundColor(appState.colors.text)
-                    .appChromeButton(for: appState.colors)
+                    .frame(width: controlSize, height: controlSize)
+                    .background(appState.colors.buttonBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                            .stroke(appState.colors.line, lineWidth: 1)
+                    )
             }
             .accessibilityLabel("Clear")
         }
@@ -213,9 +229,72 @@ private struct NearbyLogStrip: View {
         if chrome.isListening {
             P2PMessageLogView(
                 colors: appState.colors,
-                entries: log.messages,
-                currentDisplayName: appState.displayName
+                entries: log.messages.filter { $0.channel == appState.gossipChannel },
+                currentDisplayName: appState.displayName,
+                channelTitle: appState.gossipChannel.title
             )
+        }
+    }
+}
+
+/// Single-select Gossip rooms. Visible only while Gossip is on.
+private struct GossipChannelBar: View {
+    @ObservedObject var appState: AppStateViewModel
+    @ObservedObject private var chrome: P2PRadioChrome
+
+    init(appState: AppStateViewModel, inbox: P2PInboxService) {
+        self.appState = appState
+        _chrome = ObservedObject(wrappedValue: inbox.chrome)
+    }
+
+    var body: some View {
+        if chrome.isListening {
+            HStack(alignment: .center, spacing: 10) {
+                Text("Channels :")
+                    .font(AppType.display(12, weight: .bold))
+                    .foregroundColor(appState.colors.muted)
+                    .fixedSize()
+
+                HStack(spacing: 10) {
+                    ForEach(GossipChannel.allCases) { channel in
+                        let selected = appState.gossipChannel == channel
+                        Button {
+                            appState.gossipChannel = channel
+                        } label: {
+                            Text(channel.title)
+                                .font(AppType.display(12, weight: .bold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                                .foregroundColor(
+                                    selected
+                                        ? appState.colors.onAccent
+                                        : appState.colors.muted
+                                )
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(
+                                    selected
+                                        ? appState.colors.accent
+                                        : appState.colors.buttonBackground
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 4.4, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4.4, style: .continuous)
+                                        .stroke(appState.colors.line, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(channel.title)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 14)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Channels")
         }
     }
 }

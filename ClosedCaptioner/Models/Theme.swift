@@ -429,4 +429,41 @@ extension View {
                     .stroke(colors.line, lineWidth: 1)
             )
     }
+
+    /// Vertical-only scrolling — no horizontal rubber-band / swipe shift.
+    func verticalScrollLocked() -> some View {
+        self
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            .background(ScrollViewAxisLock())
+    }
+}
+
+/// Finds the enclosing UIScrollView and locks horizontal bounce / pan.
+private struct ScrollViewAxisLock: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            var node: UIView? = uiView
+            while let current = node {
+                if let scroll = current as? UIScrollView {
+                    scroll.alwaysBounceHorizontal = false
+                    scroll.showsHorizontalScrollIndicator = false
+                    scroll.isDirectionalLockEnabled = true
+                    scroll.contentInsetAdjustmentBehavior = .automatic
+                    // Keep content from being dragged sideways when it fits.
+                    if scroll.contentSize.width <= scroll.bounds.width + 0.5 {
+                        scroll.contentOffset.x = -scroll.adjustedContentInset.left
+                    }
+                    return
+                }
+                node = current.superview
+            }
+        }
+    }
 }

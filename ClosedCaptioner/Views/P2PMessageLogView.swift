@@ -19,6 +19,7 @@ struct P2PMessageLogView: View {
     let entries: [P2PLogEntry]
     /// Local display name; matching senders show as “You”.
     let currentDisplayName: String
+    var channelTitle: String = GossipChannel.room.title
 
     @State private var contentHeight: CGFloat = 0
 
@@ -65,14 +66,16 @@ struct P2PMessageLogView: View {
     private var logStack: some View {
         VStack(alignment: .leading, spacing: 6) {
             if entries.isEmpty {
-                Text("Listening for Gossip messages…")
+                Text("Listening on \(channelTitle)…")
                     .font(AppType.display(13, weight: .medium))
                     .tracking(-0.3)
                     .foregroundColor(colors.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                ForEach(entries) { entry in
-                    logRow(entry)
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    ForEach(entries) { entry in
+                        logRow(entry, now: context.date)
+                    }
                 }
             }
 
@@ -92,34 +95,73 @@ struct P2PMessageLogView: View {
         )
     }
 
-    private func logRow(_ entry: P2PLogEntry) -> some View {
+    private func logRow(_ entry: P2PLogEntry, now: Date) -> some View {
         let body = Self.displayText(entry.text)
         let label = displayName(for: entry)
+        let stamp = Self.polishedTimestamp(from: entry.receivedAt, now: now)
+        let stampSize = Self.messageFontSize * 0.78
         return (
             Text("\(label)")
                 .font(AppType.display(Self.nameFontSize, weight: .bold))
                 .tracking(-0.3)
                 .foregroundColor(colors.accent)
             +
-            Text("   ")
+            Text(" ")
             +
             Text(body)
                 .font(AppType.display(Self.messageFontSize, weight: .medium))
                 .tracking(-0.3)
                 .foregroundColor(colors.text)
+            +
+            Text("  ")
+            +
+            Text(stamp)
+                .font(AppType.display(stampSize, weight: .medium).italic())
+                .tracking(-0.2)
+                .foregroundColor(colors.text.opacity(0.7))
         )
         .multilineTextAlignment(.leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel("\(label), \(body)")
+        .accessibilityLabel("\(label), \(body), \(stamp)")
+    }
+
+    /// Polished relative age for the live Gossip strip.
+    /// 0–2m now · 2–59m “x min ago” · then “xhrs ago” · yesterday · else MM/dd.
+    static func polishedTimestamp(from date: Date, now: Date = Date()) -> String {
+        let elapsed = max(0, now.timeIntervalSince(date))
+        let minutes = Int(elapsed / 60)
+
+        if minutes < 2 {
+            return "now"
+        }
+        if minutes < 60 {
+            return "\(minutes) min ago"
+        }
+
+        let hours = Int(elapsed / 3600)
+        if hours < 24 {
+            return "\(max(hours, 1))hrs ago"
+        }
+
+        let calendar = Calendar.current
+        if calendar.isDateInYesterday(date) {
+            return "yesterday"
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.dateFormat = "MM/dd"
+        return formatter.string(from: date)
     }
 
     private func displayName(for entry: P2PLogEntry) -> String {
-        let mine = P2PConfig.normalizedName(currentDisplayName) ?? currentDisplayName
-        if entry.senderName.caseInsensitiveCompare(mine) == .orderedSame {
-            return "You"
-        }
-        return entry.senderName
+        // Local sends store no Multipeer neighbor. Do not match on display name alone —
+        // unset names used to default to the device host (often "iPhone" on both phones).
+        GossipHandle.authorLabel(
+            senderName: entry.senderName,
+            isLocal: entry.neighborName == nil
+        )
     }
 
     /// Solid from the bottom through 50% of height, gentle fade to 70%,

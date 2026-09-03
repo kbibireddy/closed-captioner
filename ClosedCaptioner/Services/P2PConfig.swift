@@ -51,6 +51,39 @@ enum RadioKeepAlive: String, CaseIterable, Identifiable {
     }
 }
 
+/// Nearby Gossip rooms. One is selected at a time while Gossip is on.
+enum GossipChannel: String, CaseIterable, Identifiable, Codable {
+    case room
+    case random
+    case whisper
+    case help
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .room: return "Room"
+        case .random: return "Random"
+        case .whisper: return "Whisper"
+        case .help: return "Help"
+        }
+    }
+
+    /// v1 packets have no `channel` field — they always land in Room.
+    static let v1Fallback: GossipChannel = .room
+
+    static func fromWire(_ value: String?) -> GossipChannel {
+        guard let value, !value.isEmpty else { return v1Fallback }
+        if let channel = GossipChannel(rawValue: value) { return channel }
+        // Brief Live/Side/Ask/Meet names from an unreleased build.
+        switch value {
+        case "live": return .room
+        case "side": return .whisper
+        default: return v1Fallback
+        }
+    }
+}
+
 enum P2PConfig {
     /// Bonjour service type for MCNearbyServiceBrowser / Advertiser (1-15 chars).
     /// Info.plist must list `_cc-p2p._tcp`.
@@ -96,13 +129,15 @@ enum P2PConfig {
         var id: String?
         var hop: Int?
         var ttl: Int?
+        var channel: String?
 
         static func make(
             _ text: String,
             from: String? = nil,
             id: String = UUID().uuidString,
             hop: Int = 0,
-            ttl: Int = P2PConfig.defaultTTL
+            ttl: Int = P2PConfig.defaultTTL,
+            channel: String? = GossipChannel.v1Fallback.rawValue
         ) -> Envelope {
             Envelope(
                 v: 1,
@@ -110,7 +145,8 @@ enum P2PConfig {
                 from: P2PConfig.normalizedName(from),
                 id: id,
                 hop: hop,
-                ttl: ttl
+                ttl: ttl,
+                channel: GossipChannel.fromWire(channel).rawValue
             )
         }
     }
@@ -120,9 +156,10 @@ enum P2PConfig {
         from: String? = nil,
         id: String = UUID().uuidString,
         hop: Int = 0,
-        ttl: Int = P2PConfig.defaultTTL
+        ttl: Int = P2PConfig.defaultTTL,
+        channel: String? = GossipChannel.v1Fallback.rawValue
     ) -> Data? {
-        try? JSONEncoder().encode(Envelope.make(text, from: from, id: id, hop: hop, ttl: ttl))
+        try? JSONEncoder().encode(Envelope.make(text, from: from, id: id, hop: hop, ttl: ttl, channel: channel))
     }
 
     static func decode(_ data: Data) -> Envelope? {
@@ -136,13 +173,22 @@ enum P2PConfig {
                 from: normalizedName(envelope.from),
                 id: envelope.id,
                 hop: envelope.hop,
-                ttl: envelope.ttl
+                ttl: envelope.ttl,
+                channel: GossipChannel.fromWire(envelope.channel).rawValue
             )
         }
         let raw = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard let raw, !raw.isEmpty else { return nil }
-        return Envelope(v: 1, text: raw, from: nil, id: nil, hop: nil, ttl: nil)
+        return Envelope(
+            v: 1,
+            text: raw,
+            from: nil,
+            id: nil,
+            hop: nil,
+            ttl: nil,
+            channel: GossipChannel.v1Fallback.rawValue
+        )
     }
 
     static func normalizedName(_ name: String?) -> String? {

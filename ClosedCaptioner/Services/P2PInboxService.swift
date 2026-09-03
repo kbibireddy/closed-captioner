@@ -19,6 +19,7 @@ struct P2PLogEntry: Identifiable, Equatable {
     /// Multipeer neighbor this payload arrived from. `nil` for locally sent captions.
     let neighborName: String?
     let text: String
+    let channel: GossipChannel
     let receivedAt: Date
 }
 
@@ -168,14 +169,21 @@ final class P2PInboxService: NSObject, ObservableObject {
     #endif
 
     override init() {
+        // Multipeer peer labels are visible on the LAN — never use UIDevice.current.name.
+        let key = "ClosedCaptioner.displayName"
+        let defaults = UserDefaults.standard
         let rawName: String
-        #if os(iOS)
-        rawName = UIDevice.current.name
-        #else
-        rawName = "ClosedCaptioner"
-        #endif
-        let display = rawName.isEmpty ? "ClosedCaptioner" : String(rawName.prefix(P2PConfig.maxDisplayNameLength))
-        self.peerID = MCPeerID(displayName: display)
+        if let saved = defaults.string(forKey: key),
+           let normalized = P2PConfig.normalizedName(saved),
+           !AppStateViewModel.isDeviceHostName(normalized) {
+            rawName = normalized
+        } else {
+            let generated = AppStateViewModel.generatedDisplayName()
+            defaults.set(generated, forKey: key)
+            rawName = generated
+        }
+        let display = String(rawName.prefix(P2PConfig.maxDisplayNameLength))
+        self.peerID = MCPeerID(displayName: display.isEmpty ? "neon_fern" : display)
         super.init()
     }
 
@@ -336,14 +344,20 @@ final class P2PInboxService: NSObject, ObservableObject {
     /// Sends `text` to connected peers. On success, appends a local log row under `from`.
     /// With no peers yet, still succeeds (broadcast into an empty room) so the sender sees Sent!
     @discardableResult
-    func broadcast(_ text: String, from displayName: String) -> Bool {
+    func broadcast(_ text: String, from displayName: String, channel: GossipChannel = .room) -> Bool {
         guard isListening, let session else { return false }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
         let sender = P2PConfig.normalizedName(displayName) ?? peerID.displayName
         let messageID = UUID().uuidString
-        guard let data = P2PConfig.encode(trimmed, from: sender, id: messageID, hop: 0) else { return false }
+        guard let data = P2PConfig.encode(
+            trimmed,
+            from: sender,
+            id: messageID,
+            hop: 0,
+            channel: channel.rawValue
+        ) else { return false }
 
         let peers = session.connectedPeers
         if !peers.isEmpty {
@@ -360,7 +374,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         rememberSeen(messageID)
         metrics.messagesSent += 1
         recordTraffic(sent: data.count, received: 0)
-        appendMessage(senderName: sender, text: trimmed, neighborName: nil)
+        appendMessage(senderName: sender, text: trimmed, neighborName: nil, channel: channel)
         metrics.lastHop = 0
         AppLog.debug("[P2P] Broadcast \(trimmed.count) chars as \(sender) to \(peers.count) peer(s)")
         return true
@@ -648,7 +662,12 @@ final class P2PInboxService: NSObject, ObservableObject {
         }
     }
 
-    private func appendMessage(senderName: String, text: String, neighborName: String?) {
+    private func appendMessage(
+        senderName: String,
+        text: String,
+        neighborName: String?,
+        channel: GossipChannel
+    ) {
         let name = P2PConfig.normalizedName(senderName) ?? "Unknown"
         let neighbor = P2PConfig.normalizedName(neighborName)
         let entry = P2PLogEntry(
@@ -656,6 +675,7 @@ final class P2PInboxService: NSObject, ObservableObject {
             senderName: name,
             neighborName: neighbor,
             text: text,
+            channel: channel,
             receivedAt: Date()
         )
         log.append(entry, cap: P2PConfig.maxLogCount)
@@ -752,7 +772,12 @@ final class P2PInboxService: NSObject, ObservableObject {
 
         metrics.messagesReceived += 1
         let sender = envelope.from ?? neighbor.displayName
-        appendMessage(senderName: sender, text: envelope.text, neighborName: neighbor.displayName)
+        appendMessage(
+            senderName: sender,
+            text: envelope.text,
+            neighborName: neighbor.displayName,
+            channel: GossipChannel.fromWire(envelope.channel)
+        )
 
         guard relayEnabled else { return }
         guard let messageID = envelope.id, !messageID.isEmpty else { return }
@@ -782,7 +807,8 @@ final class P2PInboxService: NSObject, ObservableObject {
             from: envelope.from,
             id: id,
             hop: hop,
-            ttl: ttl
+            ttl: ttl,
+            channel: envelope.channel
         ) else { return }
         do {
             try session.send(data, toPeers: targets, with: .reliable)

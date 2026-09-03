@@ -16,6 +16,7 @@ class AppStateViewModel: ObservableObject {
     private static let relayMessagesDefaultsKey = "ClosedCaptioner.relayMessages"
     private static let radioKeepAliveDefaultsKey = "ClosedCaptioner.radioKeepAlive"
     private static let emojiDetectionDefaultsKey = "ClosedCaptioner.emojiDetection"
+    private static let gossipChannelDefaultsKey = "ClosedCaptioner.gossipChannel"
 
     /// Day or night appearance
     @Published var colorMode: ColorMode {
@@ -58,6 +59,12 @@ class AppStateViewModel: ObservableObject {
     @Published var emojiDetectionEnabled: Bool {
         didSet {
             UserDefaults.standard.set(emojiDetectionEnabled, forKey: Self.emojiDetectionDefaultsKey)
+        }
+    }
+    /// Gossip room for send + live log. Default Room (v1 packets land here).
+    @Published var gossipChannel: GossipChannel {
+        didSet {
+            UserDefaults.standard.set(gossipChannel.rawValue, forKey: Self.gossipChannelDefaultsKey)
         }
     }
     /// Whether the keyboard editing view is visible
@@ -107,10 +114,15 @@ class AppStateViewModel: ObservableObject {
         AppType.fontChoice = resolvedFont
 
         let savedName = defaults.string(forKey: Self.displayNameDefaultsKey)
-        if let savedName, let normalized = P2PConfig.normalizedName(savedName) {
+        if let savedName,
+           let normalized = P2PConfig.normalizedName(savedName),
+           !Self.isDeviceHostName(normalized) {
             self.displayName = normalized
         } else {
-            self.displayName = Self.hostDisplayName()
+            // First launch (or upgrade from a host-name default): never leak “X’s iPhone”.
+            let generated = Self.generatedDisplayName()
+            self.displayName = generated
+            defaults.set(generated, forKey: Self.displayNameDefaultsKey)
         }
         if defaults.object(forKey: Self.relayMessagesDefaultsKey) == nil {
             self.relayMessages = true
@@ -120,16 +132,29 @@ class AppStateViewModel: ObservableObject {
         let savedKeepAlive = defaults.string(forKey: Self.radioKeepAliveDefaultsKey)
         self.radioKeepAlive = RadioKeepAlive(rawValue: savedKeepAlive ?? "") ?? .thirtyMinutes
         self.emojiDetectionEnabled = defaults.bool(forKey: Self.emojiDetectionDefaultsKey)
+        let savedChannel = defaults.string(forKey: Self.gossipChannelDefaultsKey)
+        self.gossipChannel = GossipChannel.fromWire(savedChannel)
     }
 
-    /// Device host name used until the user picks a display name.
-    static func hostDisplayName() -> String {
-        P2PConfig.normalizedName(UIDevice.current.name) ?? "ClosedCaptioner"
+    /// Offline adjective_noun handle seeded by the current time.
+    static func generatedDisplayName(seed: UInt64 = UInt64(Date().timeIntervalSince1970 * 1000)) -> String {
+        P2PConfig.normalizedName(GossipUsername.generate(seed: seed)) ?? "neon_fern"
     }
 
-    /// Empty or whitespace falls back to the host name.
+    /// True when `name` matches this device’s host name (PII we refuse to use as a Gossip handle).
+    static func isDeviceHostName(_ name: String) -> Bool {
+        let host = P2PConfig.normalizedName(UIDevice.current.name) ?? ""
+        guard !host.isEmpty else { return false }
+        return name.caseInsensitiveCompare(host) == .orderedSame
+    }
+
+    /// Empty or whitespace falls back to a fresh random handle.
     func commitDisplayName() {
-        displayName = P2PConfig.normalizedName(displayName) ?? Self.hostDisplayName()
+        displayName = P2PConfig.normalizedName(displayName) ?? Self.generatedDisplayName()
+    }
+
+    func randomizeDisplayName() {
+        displayName = Self.generatedDisplayName()
     }
 
     /// Clears the screen with a short poof animation (no flash overlay).

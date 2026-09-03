@@ -55,7 +55,7 @@ struct HistoryContentView: View {
                 }
                 Spacer()
             } else {
-                ScrollView {
+                ScrollView(.vertical) {
                     LazyVStack(spacing: 12) {
                         ForEach(historyManager.sortedCaptions) { caption in
                             HistoryRow(
@@ -71,7 +71,9 @@ struct HistoryContentView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
+                    .frame(maxWidth: .infinity)
                 }
+                .verticalScrollLocked()
                 .background(appState.colors.background)
             }
         }
