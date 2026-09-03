@@ -63,7 +63,7 @@ struct KeyboardEditView: View {
             .foregroundColor(appState.colors.text)
             .multilineTextAlignment(.center)
 
-            Text("And with Huddle turned on, tap and swipe up to broadcast this message to peers on the Huddle network.")
+            Text("And with Gossip turned on, tap and swipe up to broadcast this message to peers on the Gossip network.")
                 .font(AppType.display(17, weight: .medium))
                 .tracking(-0.4)
                 .foregroundColor(appState.colors.muted)
@@ -71,7 +71,7 @@ struct KeyboardEditView: View {
         }
         .padding(.horizontal, 32)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Press the right arrow to put this text on the canvas. And with Huddle turned on, tap and swipe up to broadcast this message to peers on the Huddle network.")
+        .accessibilityLabel("Press the right arrow to put this text on the canvas. And with Gossip turned on, tap and swipe up to broadcast this message to peers on the Gossip network.")
     }
 
     private var sendHintRow: some View {
@@ -86,7 +86,7 @@ struct KeyboardEditView: View {
 
     private var composer: some View {
         HStack(alignment: .center, spacing: 8) {
-            TextField("Caption", text: $text, axis: .vertical)
+            TextField("Text", text: $text, axis: .vertical)
                 .font(AppType.display(28, weight: .medium))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
@@ -94,7 +94,7 @@ struct KeyboardEditView: View {
                 .focused($isFocused)
                 .padding(.leading, 14)
                 .padding(.vertical, 6)
-                .accessibilityLabel("Caption")
+                .accessibilityLabel("Text")
 
             Button(action: onDone) {
                 Image(systemName: "arrow.right")
@@ -105,7 +105,7 @@ struct KeyboardEditView: View {
                     .clipShape(Circle())
             }
             .padding(.trailing, 6)
-            .accessibilityLabel("Place caption on canvas")
+            .accessibilityLabel("Place text on canvas")
         }
         .background(appState.colors.card)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))

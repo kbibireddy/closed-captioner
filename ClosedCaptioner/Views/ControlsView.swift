@@ -186,8 +186,8 @@ private struct RadioTopBar: View {
             }
             .accessibilityLabel(
                 chrome.isListening
-                    ? "Turn Huddle off"
-                    : "Turn Huddle on"
+                    ? "Turn Gossip off"
+                    : "Turn Gossip on"
             )
             .accessibilityAddTraits(.isButton)
             .accessibilityValue(chrome.isListening ? "On" : "Off")
@@ -253,14 +253,14 @@ private struct P2PRadioStatsView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Huddle")
+        .accessibilityLabel("Gossip")
         .accessibilityValue(accessibilitySummary)
-        .accessibilityHint(isListening ? "" : "Turns Huddle on")
+        .accessibilityHint(isListening ? "" : "Turns Gossip on")
     }
 
     private var offState: some View {
         VStack(alignment: .trailing, spacing: 1) {
-            Text("Huddle")
+            Text("Gossip")
                 .font(AppType.display(10, weight: .bold))
                 .tracking(0.6)
                 .textCase(.uppercase)
@@ -275,7 +275,7 @@ private struct P2PRadioStatsView: View {
 
     private var onState: some View {
         VStack(alignment: .trailing, spacing: 3) {
-            Text("Huddle")
+            Text("Gossip")
                 .font(AppType.display(10, weight: .bold))
                 .tracking(0.6)
                 .textCase(.uppercase)

@@ -282,7 +282,7 @@ struct KPISettingsView: View {
                     kpiRow("App uptime", performance.formattedUptime)
                 }
 
-                kpiSection("Huddle", table: {
+                kpiSection("Gossip", table: {
                     kpiRow("Status", chrome.isListening ? "On" : "Off")
                     kpiRow("Relay", (chrome.isListening && appState.relayMessages) ? "On" : "Off")
                 }, cards: {

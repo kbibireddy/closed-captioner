@@ -15,8 +15,8 @@ enum ActivityPane: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .captions: return "Captions"
-        case .huddle: return "Huddle"
+        case .captions: return "Text"
+        case .huddle: return "Gossip"
         }
     }
 
@@ -130,11 +130,11 @@ struct HuddleLogsSettingsView: View {
             if log.messages.isEmpty {
                 VStack(spacing: 8) {
                     Spacer()
-                    Text("No Huddle messages yet")
+                    Text("No Gossip messages yet")
                         .font(AppType.display(22))
                         .tracking(-0.6)
                         .foregroundColor(appState.colors.muted)
-                    Text("Turn Huddle on to collect the live 200-message buffer.")
+                    Text("Turn Gossip on to collect the live 200-message buffer.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                         .multilineTextAlignment(.center)
@@ -143,7 +143,7 @@ struct HuddleLogsSettingsView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Ordered messages on the Huddle network, including your own.")
+                    Text("Ordered messages on the Gossip network, including your own.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                         .padding(.horizontal, 20)
@@ -181,7 +181,7 @@ struct HuddleLogsSettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(appState.colors.background)
-        .accessibilityLabel("Huddle message logs")
+        .accessibilityLabel("Gossip message logs")
     }
 
     private func logLine(_ entry: P2PLogEntry) -> some View {

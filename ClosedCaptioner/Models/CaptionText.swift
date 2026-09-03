@@ -13,7 +13,7 @@ enum CaptionSource: String, Codable, CaseIterable {
     case speech
     case shake
 
-    /// Short chip label in Activity → Captions.
+    /// Short chip label in Activity → Text.
     var chipTitle: String {
         switch self {
         case .text: return "Text"

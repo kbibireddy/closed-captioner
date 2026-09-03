@@ -998,8 +998,8 @@ enum NearbyMeshNotice {
 
     private static func addRequest(delay: TimeInterval, keepAlive: RadioKeepAlive) {
         let content = UNMutableNotificationContent()
-        content.title = "Huddle is still on"
-        content.body = "This phone is still in the Huddle. It can receive and send captions. Turn Huddle off or close the app to leave. \(keepAlive.autoOffPhrase)"
+        content.title = "Gossip is still on"
+        content.body = "This phone is still on Gossip. It can receive and send text. Turn Gossip off or close the app to leave. \(keepAlive.autoOffPhrase)"
         content.sound = .default
         content.interruptionLevel = .active
 

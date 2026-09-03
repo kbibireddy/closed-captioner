@@ -33,7 +33,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("This name is shown on Huddle messages you send. It starts as this device’s host name.")
+            Text("This name is shown on Gossip messages you send. It starts as this device’s host name.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -69,7 +69,7 @@ struct GeneralSettingsView: View {
 
     private var captionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Captions")
+            Text("Text")
                 .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
@@ -91,18 +91,18 @@ struct GeneralSettingsView: View {
             }
             .tint(appState.colors.accent)
             .accessibilityLabel("Emoji detection")
-            .accessibilityHint("Experimental. Adds suggested emojis to captions after speech stabilizes.")
+            .accessibilityHint("Experimental. Adds suggested emojis to on-screen text after speech stabilizes.")
         }
     }
 
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Huddle")
+            Text("Gossip protocol")
                 .font(AppType.display(22))
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("When Huddle is on, this phone passes captions to the next person so they can travel farther. Delivery isn’t guaranteed.")
+            Text("When Gossip is on, this phone passes text to the next person so it can travel farther. Delivery isn’t guaranteed.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)
@@ -112,20 +112,20 @@ struct GeneralSettingsView: View {
                     Text("Relay messages")
                         .font(AppType.display(15, weight: .semibold))
                         .foregroundColor(appState.colors.text)
-                    Text("On by default. Uses extra Bluetooth or Wi‑Fi only while Huddle is on.")
+                    Text("On by default. Uses extra Bluetooth or Wi‑Fi only while Gossip is on.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                 }
             }
             .tint(appState.colors.accent)
             .accessibilityLabel("Relay messages")
-            .accessibilityHint("Forwards Huddle captions so they can reach people farther away. Huddle must also be on.")
+            .accessibilityHint("Forwards Gossip messages so they can reach people farther away. Gossip must also be on.")
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Keep Huddle on")
+                Text("Keep Gossip on")
                     .font(AppType.display(15, weight: .semibold))
                     .foregroundColor(appState.colors.text)
-                Text("Stays on if you switch apps or lock the phone. Stops when you turn Huddle off, close the app, or this timer ends. iOS may still pause it to save battery.")
+                Text("Stays on if you switch apps or lock the phone. Stops when you turn Gossip off, close the app, or this timer ends. iOS may still pause it to save battery.")
                     .font(AppType.display(13, weight: .medium))
                     .foregroundColor(appState.colors.muted)
 
@@ -228,7 +228,7 @@ struct GeneralSettingsView: View {
                 .tracking(-0.8)
                 .foregroundColor(appState.colors.text)
 
-            Text("Stealth keeps captions hard to read from a distance.")
+            Text("Stealth keeps on-screen text hard to read from a distance.")
                 .font(AppType.display(14, weight: .medium))
                 .foregroundColor(appState.colors.muted)
                 .padding(.bottom, 4)

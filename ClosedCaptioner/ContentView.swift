@@ -30,6 +30,8 @@ struct ContentView: View {
     /// Center feedback after send / failed flick (like Poof!!!).
     @State private var canvasFeedback: CanvasFeedback?
     @State private var canvasFeedbackOpacity: Double = 1
+    @State private var showGossipSwipeHint = false
+    @State private var gossipHintCycleTask: Task<Void, Never>?
 
     private enum CanvasFeedback: Equatable {
         case sent
@@ -123,6 +125,7 @@ struct ContentView: View {
             radioIsOn = p2pInbox.isListening
             previousRecordingState = micController.isRecording
             updateShakeMonitoring()
+            updateGossipSwipeHintScheduling()
             // ATT before AdMob (and before mic/speech alerts) so App Review sees tracking prompt.
             AdsBootstrap.prepareForForeground(isPremium: PremiumManager.shared.adsSuppressed) {
                 requestPermissions()
@@ -140,9 +143,20 @@ struct ContentView: View {
         }
         .onChange(of: appState.showSettings) { _ in
             updateShakeMonitoring()
+            updateGossipSwipeHintScheduling()
         }
         .onChange(of: appState.showKeyboard) { _ in
             updateShakeMonitoring()
+            updateGossipSwipeHintScheduling()
+        }
+        .onChange(of: appState.showPoofAnimation) { _ in
+            updateGossipSwipeHintScheduling()
+        }
+        .onChange(of: radioIsOn) { _ in
+            updateGossipSwipeHintScheduling()
+        }
+        .onChange(of: speechService.currentText) { _ in
+            updateGossipSwipeHintScheduling()
         }
         .onChange(of: scenePhase) { phase in
             handleScenePhase(phase)
@@ -171,6 +185,7 @@ struct ContentView: View {
             handleShake()
         }
         .onDisappear {
+            cancelGossipSwipeHint()
             saveCurrentTextToHistory()
             speechService.stopRecording()
             ShakeDetectionService.shared.stopMonitoring()
@@ -224,39 +239,64 @@ struct ContentView: View {
     }
     
     private var captionCanvas: some View {
-        VStack {
-            Spacer()
+        ZStack(alignment: .top) {
+            VStack {
+                Spacer()
 
-            if appState.showPoofAnimation {
-                Text("Poof!!!")
-                    .font(AppType.display(56))
-                    .tracking(-1.8)
-                    .foregroundColor(appState.colors.text)
-                    .opacity(appState.poofOpacity)
-            } else if let canvasFeedback {
-                canvasFeedbackView(canvasFeedback)
-            } else if !speechService.currentText.isEmpty {
-                CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
-                    .offset(captionOffset)
-                    .scaleEffect(captionScale)
-                    .opacity(captionOpacity)
-                    .accessibilityHint(
-                        radioIsOn
-                            ? "Flick up to send this caption to nearby Closed Captioner devices"
-                            : ""
-                    )
-            } else if micController.isRecording {
-                Text("Listening…")
-                    .font(AppType.display(40))
-                    .tracking(-1.2)
-                    .foregroundColor(appState.colors.muted)
+                if appState.showPoofAnimation {
+                    Text("Poof!!!")
+                        .font(AppType.display(56))
+                        .tracking(-1.8)
+                        .foregroundColor(appState.colors.text)
+                        .opacity(appState.poofOpacity)
+                } else if let canvasFeedback {
+                    canvasFeedbackView(canvasFeedback)
+                } else if !speechService.currentText.isEmpty {
+                    CaptionTextDisplay(text: speechService.currentText, colors: appState.colors)
+                        .offset(captionOffset)
+                        .scaleEffect(captionScale)
+                        .opacity(captionOpacity)
+                        .accessibilityHint(
+                            radioIsOn
+                                ? "Flick up to send this text over Gossip"
+                                : ""
+                        )
+                } else if micController.isRecording {
+                    Text("Listening…")
+                        .font(AppType.display(40))
+                        .tracking(-1.2)
+                        .foregroundColor(appState.colors.muted)
+                }
+
+                Spacer()
             }
 
-            Spacer()
+            if showGossipSwipeHint {
+                gossipSwipeHintToast
+                    .padding(.top, 120)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .gesture(broadcastFlickGesture, including: canBroadcastCaption ? .all : .none)
+    }
+
+    private var gossipSwipeHintToast: some View {
+        Text("Swipe up to send gossip")
+            .font(AppType.display(14, weight: .semibold))
+            .tracking(-0.3)
+            .foregroundColor(appState.colors.onAccent)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(appState.colors.accent)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(appState.colors.line.opacity(0.35), lineWidth: 1)
+            )
+            .opacity(0.5)
+            .accessibilityLabel("Swipe up to send gossip")
     }
 
     @ViewBuilder
@@ -285,6 +325,7 @@ struct ContentView: View {
         DragGesture(minimumDistance: 4, coordinateSpace: .local)
             .onChanged { value in
                 guard canBroadcastCaption else { return }
+                cancelGossipSwipeHint()
                 captionOffset = value.translation
                 captionScale = 1.05
             }
@@ -302,6 +343,50 @@ struct ContentView: View {
             && canvasFeedback == nil
             && !isSendingCaption
             && !isFlickBusy
+    }
+
+    private var canShowGossipSwipeHint: Bool {
+        canBroadcastCaption
+    }
+
+    private func updateGossipSwipeHintScheduling() {
+        if canShowGossipSwipeHint {
+            scheduleGossipSwipeHint()
+        } else {
+            cancelGossipSwipeHint()
+        }
+    }
+
+    private func scheduleGossipSwipeHint() {
+        gossipHintCycleTask?.cancel()
+        showGossipSwipeHint = false
+
+        guard canShowGossipSwipeHint else { return }
+
+        let textSnapshot = speechService.currentText
+
+        gossipHintCycleTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard canShowGossipSwipeHint, speechService.currentText == textSnapshot else { return }
+
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showGossipSwipeHint = true
+            }
+
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showGossipSwipeHint = false
+            }
+        }
+    }
+
+    private func cancelGossipSwipeHint() {
+        gossipHintCycleTask?.cancel()
+        gossipHintCycleTask = nil
+        showGossipSwipeHint = false
     }
 
     private func handleBroadcastFlick(_ value: DragGesture.Value) {
@@ -421,6 +506,7 @@ struct ContentView: View {
     }
 
     private func showCanvasFeedback(_ feedback: CanvasFeedback, then completion: @escaping () -> Void) {
+        cancelGossipSwipeHint()
         canvasFeedback = feedback
         canvasFeedbackOpacity = 1
         withAnimation(.easeOut(duration: 0.8)) {

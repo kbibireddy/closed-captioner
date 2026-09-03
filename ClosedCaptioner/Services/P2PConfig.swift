@@ -46,7 +46,7 @@ enum RadioKeepAlive: String, CaseIterable, Identifiable {
         case .oneHour: return "It turns off automatically in 1 hour."
         case .fourHours: return "It turns off automatically in 4 hours."
         case .eightHours: return "It turns off automatically in 8 hours."
-        case .untilOff: return "It stays on until you turn Huddle off or close the app."
+        case .untilOff: return "It stays on until you turn Gossip off or close the app."
         }
     }
 }

@@ -20,7 +20,7 @@ struct HistoryContentView: View {
         VStack(spacing: 0) {
             if !historyManager.sortedCaptions.isEmpty {
                 HStack {
-                    Text("A history of captions that reached the canvas.")
+                    Text("A history of text that reached the canvas.")
                         .font(AppType.display(13, weight: .medium))
                         .foregroundColor(appState.colors.muted)
                     Spacer(minLength: 8)
@@ -32,7 +32,7 @@ struct HistoryContentView: View {
                                 .font(AppType.display(12, weight: .bold))
                                 .foregroundColor(appState.colors.danger)
                         }
-                        .accessibilityLabel("Clear all captions")
+                        .accessibilityLabel("Clear all text history")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -43,7 +43,7 @@ struct HistoryContentView: View {
             if historyManager.sortedCaptions.isEmpty {
                 Spacer()
                 VStack(spacing: 8) {
-                    Text("No captions yet")
+                    Text("No text yet")
                         .font(AppType.display(22))
                         .tracking(-0.8)
                         .foregroundColor(appState.colors.muted)
@@ -75,15 +75,15 @@ struct HistoryContentView: View {
                 .background(appState.colors.background)
             }
         }
-        .alert("Clear all captions?", isPresented: $showDeleteAllConfirmation) {
+        .alert("Clear all text?", isPresented: $showDeleteAllConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Clear all", role: .destructive) {
                 historyManager.clearHistory()
             }
         } message: {
-            Text("This permanently deletes every caption in history.")
+            Text("This permanently deletes every entry in history.")
         }
-        .alert("Delete caption?", isPresented: $showDeleteConfirmation) {
+        .alert("Delete this text?", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 if let id = captionToDelete {
@@ -91,7 +91,7 @@ struct HistoryContentView: View {
                 }
             }
         } message: {
-            Text("This caption will be removed from history.")
+            Text("This entry will be removed from history.")
         }
         .sheet(item: $selectedCaption) { caption in
             HistoryDetailView(
@@ -162,7 +162,7 @@ struct HistoryRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Delete caption")
+            .accessibilityLabel("Delete text")
         }
         .padding(14)
         .background(appState.colors.card)
@@ -173,7 +173,7 @@ struct HistoryRow: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(caption.source.accessibilityTitle), \(caption.text)")
-        .accessibilityHint("Opens caption")
+        .accessibilityHint("Opens text")
         .accessibilityAction(named: "Open") { onTap() }
     }
 }

@@ -40,7 +40,7 @@ struct P2PMessageLogView: View {
             .frame(height: Self.maxHeight, alignment: .bottom)
             .mask(fadeMask)
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Nearby message log")
+            .accessibilityLabel("Gossip message log")
     }
 
     @ViewBuilder
@@ -65,7 +65,7 @@ struct P2PMessageLogView: View {
     private var logStack: some View {
         VStack(alignment: .leading, spacing: 6) {
             if entries.isEmpty {
-                Text("Listening for nearby messages…")
+                Text("Listening for Gossip messages…")
                     .font(AppType.display(13, weight: .medium))
                     .tracking(-0.3)
                     .foregroundColor(colors.muted)
