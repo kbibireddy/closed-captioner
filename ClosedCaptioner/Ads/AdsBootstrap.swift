@@ -25,12 +25,15 @@ enum AdsBootstrap {
             // ATT requires an active key window; brief delay after becoming active.
             try? await Task.sleep(nanoseconds: 800_000_000)
 
+            // Always prompt ATT even during the grace period — Apple requires
+            // the dialog before any tracking-capable SDK could collect data.
+            await requestTrackingAuthorizationIfNeeded()
+
             if PremiumManager.shared.adsSuppressed || isPremium {
                 onReady?()
                 return
             }
 
-            await requestTrackingAuthorizationIfNeeded()
             startAdsIfNeeded()
             PremiumManager.shared.markAdsStarted()
             onReady?()
