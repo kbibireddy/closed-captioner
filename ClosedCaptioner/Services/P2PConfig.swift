@@ -96,15 +96,15 @@ enum P2PConfig {
     static let maxDisplayNameLength = 63
     static let defaultTTL = 4
     static let maxNeighbors = 6
-    static let inviteTimeoutSeconds: TimeInterval = 12
+    static let inviteTimeoutSeconds: TimeInterval = 8
     /// Rolling window for HUD ↑/↓ rates (sum of bytes in the last N seconds → B/s).
     static let trafficRateWindowSeconds: TimeInterval = 30
     /// How often published rates refresh so a quiet window decays toward zero.
     static let trafficRateRefreshSeconds: TimeInterval = 1
     /// iOS↔macOS Multipeer ICE often fails with `.required` and no identity.
     static let encryptionPreference: MCEncryptionPreference = .optional
-    static let inviteRetryLimit = 4
-    static let inviteRetryDelaySeconds: TimeInterval = 1.5
+    static let inviteRetryLimit = 3
+    static let inviteRetryDelaySeconds: TimeInterval = 2.0
     static let maxSeenIDs = 500
 
     // --- Reconnection resilience ---
@@ -113,13 +113,17 @@ enum P2PConfig {
     /// Maximum browse/advertise restart attempts before giving up.
     static let browseRetryLimit = 5
     /// How often the health check fires while radio is on to detect stale sessions.
-    static let healthCheckIntervalSeconds: TimeInterval = 10
+    static let healthCheckIntervalSeconds: TimeInterval = 3
     /// If connected peers drops to 0 and stays there this long, restart browse/advertise.
-    static let staleSessionThresholdSeconds: TimeInterval = 15
+    static let staleSessionThresholdSeconds: TimeInterval = 5
     /// Grace period after returning to foreground before forcing a session rebuild.
-    static let foregroundRebuildGraceSeconds: TimeInterval = 3
+    static let foregroundRebuildGraceSeconds: TimeInterval = 1
     /// Delay before attempting to re-invite a peer that disconnected while connected.
-    static let reconnectDelaySeconds: TimeInterval = 2
+    static let reconnectDelaySeconds: TimeInterval = 0.5
+    /// How long to remember a dropped peer display name for fast re-invite on rediscovery.
+    static let recentlyDroppedRememberSeconds: TimeInterval = 45
+    /// After an invite times out / AWDL fails, wait before inviting that name again.
+    static let inviteCooldownSeconds: TimeInterval = 4
 
     /// v1 compatible JSON. Extra fields are ignored by older decoders.
     struct Envelope: Codable, Equatable {

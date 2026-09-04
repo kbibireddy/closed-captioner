@@ -110,7 +110,10 @@ final class RadioPeer: NSObject {
         if let info, info[P2PConfig.discoveryRoleKey] != P2PConfig.discoveryRoleEmitter {
             return false
         }
-        let remoteID = info?[P2PConfig.discoveryPeerIDKey] ?? other.displayName
+        // Require discovery id so both sides use the same invite winner rule.
+        guard let remoteID = info?[P2PConfig.discoveryPeerIDKey], !remoteID.isEmpty else {
+            return false
+        }
         return instanceID < remoteID
     }
 

@@ -295,7 +295,6 @@ struct ContentView: View {
                 Capsule()
                     .stroke(appState.colors.line.opacity(0.35), lineWidth: 1)
             )
-            .opacity(0.5)
             .accessibilityLabel("Swipe up to send gossip")
     }
 

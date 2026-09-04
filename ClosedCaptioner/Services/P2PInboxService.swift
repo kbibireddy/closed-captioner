@@ -147,6 +147,10 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var advertiser: MCNearbyServiceAdvertiser?
     private var invitedPeerIDs = Set<MCPeerID>()
     private var inviteAttempts: [MCPeerID: Int] = [:]
+    /// Peers currently in `.connecting` — do not start a second handshake.
+    private var connectingPeerIDs = Set<MCPeerID>()
+    /// Display-name → earliest time we may invite again (after timeout / AWDL fail).
+    private var inviteCooldownUntil: [String: Date] = [:]
     private var seenMessageIDs: [String] = []
     private var knownConnected = Set<MCPeerID>()
     private var listeningStartedAt: Date?
@@ -164,6 +168,8 @@ final class P2PInboxService: NSObject, ObservableObject {
     private var healthCheckTimer: Timer?
     /// Timestamp when peers last dropped to zero (for stale-session detection).
     private var zeroPeersSince: Date?
+    /// Throttle browse/advertise restarts so health check cannot thrash.
+    private var lastBrowseRestartAt: Date?
     #if os(iOS)
     private var backgroundTask = UIBackgroundTaskIdentifier.invalid
     #endif
@@ -279,6 +285,9 @@ final class P2PInboxService: NSObject, ObservableObject {
         recentlyDroppedPeers.removeAll()
         browseRetryCount = 0
         zeroPeersSince = nil
+        lastBrowseRestartAt = nil
+        connectingPeerIDs.removeAll()
+        inviteCooldownUntil.removeAll()
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = false
         NearbyMeshNotice.clear()
@@ -433,6 +442,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         session = nil
         invitedPeerIDs.removeAll()
         inviteAttempts.removeAll()
+        connectingPeerIDs.removeAll()
         knownConnected.removeAll()
         chrome.connectedPeerCount = 0
         trafficSamples.removeAll()
@@ -453,7 +463,12 @@ final class P2PInboxService: NSObject, ObservableObject {
     /// Restart browse + advertise on the existing session without tearing down
     /// connections. Useful when returning from background or after a network blip.
     private func restartBrowseAdvertise() {
-        guard isListening, let session else { return }
+        guard isListening, session != nil else { return }
+        // Stopping browse/advertise mid-ICE aborts Multipeer channels ("Not in connected state…").
+        if !connectingPeerIDs.isEmpty || !invitedPeerIDs.isEmpty {
+            AppLog.debug("[P2P] Skip browse restart: handshake in flight")
+            return
+        }
         browser?.stopBrowsingForPeers()
         browser?.delegate = nil
         advertiser?.stopAdvertisingPeer()
@@ -477,31 +492,27 @@ final class P2PInboxService: NSObject, ObservableObject {
         // Reset invite bookkeeping so stale entries don't block new invites.
         invitedPeerIDs.removeAll()
         inviteAttempts.removeAll()
+        lastBrowseRestartAt = Date()
 
         newBrowser.startBrowsingForPeers()
         newAdvertiser.startAdvertisingPeer()
         AppLog.debug("[P2P] Restarted browse + advertise (session kept)")
     }
 
-    /// Attempt to reconnect to a peer that was connected and then dropped.
+    /// After a drop: rediscover via Bonjour. Do not invite the stale MCPeerID —
+    /// that races AWDL and produces Invite timed out + socket error 60 loops.
     private func scheduleReconnect(_ droppedPeer: MCPeerID) {
         guard isListening else { return }
         recentlyDroppedPeers[droppedPeer] = Date()
-        let delay = P2PConfig.reconnectDelaySeconds
-        AppLog.debug("[P2P] Will attempt reconnect to \(droppedPeer.displayName) in \(Int(delay))s")
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.isListening, let browser = self.browser else { return }
-            // Only re-invite if they haven't already reconnected.
-            guard self.session?.connectedPeers.contains(droppedPeer) != true else {
-                self.recentlyDroppedPeers.removeValue(forKey: droppedPeer)
-                return
-            }
-            guard !self.neighborSlotsFull() else { return }
-            // Reset retry count so we get fresh attempts.
-            self.inviteAttempts[droppedPeer] = 0
-            self.invite(droppedPeer, using: browser)
-            AppLog.debug("[P2P] Re-inviting dropped peer \(droppedPeer.displayName)")
-        }
+        invitedPeerIDs.remove(droppedPeer)
+        connectingPeerIDs.remove(droppedPeer)
+        inviteAttempts[droppedPeer] = 0
+        // Do not invite-cooldown a previously connected peer — we want fast rediscovery.
+        inviteCooldownUntil.removeValue(forKey: droppedPeer.displayName)
+        zeroPeersSince = Date()
+
+        AppLog.debug("[P2P] Peer dropped \(droppedPeer.displayName) — restarting browse/advertise")
+        restartBrowseAdvertise()
     }
 
     // MARK: - Health check (B4)
@@ -525,24 +536,34 @@ final class P2PInboxService: NSObject, ObservableObject {
         let peerCount = session?.connectedPeers.count ?? 0
         refreshPeerCount()
 
-        if peerCount == 0 {
+        // Handshake in flight: never restart browse/advertise — that aborts AWDL ICE
+        // (Accept → connecting → health restart → notConnected).
+        if !connectingPeerIDs.isEmpty || !invitedPeerIDs.isEmpty {
+            zeroPeersSince = nil
+        } else if peerCount == 0 {
             if zeroPeersSince == nil {
                 zeroPeersSince = Date()
             } else if let since = zeroPeersSince,
                       Date().timeIntervalSince(since) >= P2PConfig.staleSessionThresholdSeconds {
-                // Peers have been at 0 too long — restart browse/advertise
-                // to shake off any stale Bonjour state.
-                AppLog.debug("[P2P] Health check: 0 peers for \(Int(P2PConfig.staleSessionThresholdSeconds))s, restarting browse/advertise")
-                zeroPeersSince = nil
-                restartBrowseAdvertise()
+                let minRestartGap = max(P2PConfig.staleSessionThresholdSeconds, 8)
+                if let last = lastBrowseRestartAt,
+                   Date().timeIntervalSince(last) < minRestartGap {
+                    // Still alone, but we just restarted — wait before thrashing Bonjour again.
+                } else {
+                    AppLog.debug("[P2P] Health check: 0 peers for \(Int(P2PConfig.staleSessionThresholdSeconds))s, restarting browse/advertise")
+                    zeroPeersSince = nil
+                    lastBrowseRestartAt = Date()
+                    restartBrowseAdvertise()
+                }
             }
         } else {
             zeroPeersSince = nil
         }
 
-        // Prune stale dropped-peer entries (older than 30s — they're gone).
-        let cutoff = Date().addingTimeInterval(-30)
+        // Prune stale dropped-peer / cooldown entries.
+        let cutoff = Date().addingTimeInterval(-P2PConfig.recentlyDroppedRememberSeconds)
         recentlyDroppedPeers = recentlyDroppedPeers.filter { $0.value > cutoff }
+        inviteCooldownUntil = inviteCooldownUntil.filter { $0.value > Date() }
     }
 
     // MARK: - Browse/advertise failure recovery (B3)
@@ -695,13 +716,23 @@ final class P2PInboxService: NSObject, ObservableObject {
     }
 
     private func shouldInvite(_ other: MCPeerID, info: [String: String]?) -> Bool {
-        if let remoteID = info?[P2PConfig.discoveryPeerIDKey], remoteID == instanceID {
-            return false
-        }
         if other == peerID {
             return false
         }
-        if session?.connectedPeers.contains(other) == true || invitedPeerIDs.contains(other) {
+        // Require stable discovery id — falling back to displayName lets both sides
+        // invite (UUID vs "fluffy_glowstick") and dual-handshake AWDL to death.
+        guard let remoteID = info?[P2PConfig.discoveryPeerIDKey], !remoteID.isEmpty else {
+            AppLog.debug("[P2P] Skip invite \(other.displayName): missing discovery id")
+            return false
+        }
+        if remoteID == instanceID {
+            return false
+        }
+        if session?.connectedPeers.contains(other) == true
+            || invitedPeerIDs.contains(other)
+            || connectingPeerIDs.contains(other)
+            || isConnecting(named: other.displayName)
+        {
             return false
         }
         if neighborSlotsFull() {
@@ -710,8 +741,51 @@ final class P2PInboxService: NSObject, ObservableObject {
         if let info, info[P2PConfig.discoveryRoleKey] != P2PConfig.discoveryRoleEmitter {
             return false
         }
-        let remoteID = info?[P2PConfig.discoveryPeerIDKey] ?? other.displayName
+        if isInviteCoolingDown(other.displayName) {
+            AppLog.debug("[P2P] Skip invite \(other.displayName): cooldown after timeout")
+            return false
+        }
+        // Exactly one side invites (lexicographic instance id).
         return instanceID < remoteID
+    }
+
+    private func isRecentlyDropped(_ other: MCPeerID) -> Bool {
+        let cutoff = Date().addingTimeInterval(-P2PConfig.recentlyDroppedRememberSeconds)
+        return recentlyDroppedPeers.contains { peer, at in
+            guard at > cutoff else { return false }
+            return peer == other
+                || peer.displayName.caseInsensitiveCompare(other.displayName) == .orderedSame
+        }
+    }
+
+    private func isConnecting(named displayName: String) -> Bool {
+        connectingPeerIDs.contains {
+            $0.displayName.caseInsensitiveCompare(displayName) == .orderedSame
+        }
+    }
+
+    private func isInviteCoolingDown(_ displayName: String) -> Bool {
+        guard let until = inviteCooldownUntil[displayName] else { return false }
+        if until <= Date() {
+            inviteCooldownUntil.removeValue(forKey: displayName)
+            return false
+        }
+        return true
+    }
+
+    private func markInviteCooldown(_ displayName: String) {
+        inviteCooldownUntil[displayName] = Date().addingTimeInterval(P2PConfig.inviteCooldownSeconds)
+    }
+
+    private func clearHandshakeState(for peer: MCPeerID) {
+        invitedPeerIDs.remove(peer)
+        connectingPeerIDs.remove(peer)
+        invitedPeerIDs = invitedPeerIDs.filter {
+            $0.displayName.caseInsensitiveCompare(peer.displayName) != .orderedSame
+        }
+        connectingPeerIDs = connectingPeerIDs.filter {
+            $0.displayName.caseInsensitiveCompare(peer.displayName) != .orderedSame
+        }
     }
 
     private func runOnMainSync(_ work: () -> Void) {
@@ -724,6 +798,10 @@ final class P2PInboxService: NSObject, ObservableObject {
 
     private func invite(_ other: MCPeerID, using browser: MCNearbyServiceBrowser) {
         guard isListening, let session else { return }
+        if connectingPeerIDs.contains(other) || isConnecting(named: other.displayName) {
+            AppLog.debug("[P2P] Skip invite \(other.displayName): already connecting")
+            return
+        }
         invitedPeerIDs.insert(other)
         scheduleInviteTimeout(other)
         AppLog.debug("[P2P] Inviting \(other.displayName)")
@@ -732,9 +810,11 @@ final class P2PInboxService: NSObject, ObservableObject {
 
     private func retryInviteIfNeeded(_ other: MCPeerID) {
         guard isListening else { return }
+        if isInviteCoolingDown(other.displayName) { return }
         let attempts = inviteAttempts[other, default: 0]
         guard attempts < P2PConfig.inviteRetryLimit else {
             AppLog.debug("[P2P] Gave up inviting \(other.displayName)")
+            markInviteCooldown(other.displayName)
             return
         }
         inviteAttempts[other] = attempts + 1
@@ -743,6 +823,7 @@ final class P2PInboxService: NSObject, ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, self.isListening, let browser = self.browser else { return }
             guard self.session?.connectedPeers.contains(other) != true else { return }
+            guard !self.isConnecting(named: other.displayName) else { return }
             self.invite(other, using: browser)
         }
     }
@@ -752,8 +833,10 @@ final class P2PInboxService: NSObject, ObservableObject {
             guard let self, self.isListening else { return }
             guard self.invitedPeerIDs.contains(peer) else { return }
             if self.session?.connectedPeers.contains(peer) == true { return }
+            if self.connectingPeerIDs.contains(peer) { return }
             self.invitedPeerIDs.remove(peer)
             self.metrics.inviteTimeouts += 1
+            self.markInviteCooldown(peer.displayName)
             AppLog.debug("[P2P] Invite timed out \(peer.displayName)")
         }
     }
@@ -824,7 +907,12 @@ extension P2PInboxService: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
         runOnMainSync {
             guard self.isListening, self.browser === browser else { return }
+            let rediscovered = self.isRecentlyDropped(peerID)
             guard self.shouldInvite(peerID, info: info) else { return }
+            if rediscovered {
+                AppLog.debug("[P2P] Rediscovered dropped peer \(peerID.displayName) — inviting")
+                self.inviteAttempts[peerID] = 0
+            }
             self.invite(peerID, using: browser)
         }
     }
@@ -858,8 +946,18 @@ extension P2PInboxService: MCNearbyServiceAdvertiserDelegate {
             if self.neighborSlotsFull() && live.connectedPeers.contains(peerID) != true {
                 return
             }
+            // Dual handshake kills AWDL: if we already invited them, drop our invite
+            // and accept theirs so only one ICE attempt runs.
+            if self.invitedPeerIDs.contains(peerID) || self.invitedPeerIDs.contains(where: {
+                $0.displayName.caseInsensitiveCompare(peerID.displayName) == .orderedSame
+            }) {
+                AppLog.debug("[P2P] Yielding our invite; accepting \(peerID.displayName)")
+                self.clearHandshakeState(for: peerID)
+            }
             accept = true
             session = live
+            self.connectingPeerIDs.insert(peerID)
+            self.zeroPeersSince = nil
             AppLog.debug("[P2P] Accepting \(peerID.displayName)")
         }
         invitationHandler(accept, session)
@@ -879,22 +977,31 @@ extension P2PInboxService: MCSessionDelegate {
             switch state {
             case .notConnected:
                 let wasInviting = self.invitedPeerIDs.contains(peerID)
+                    || self.invitedPeerIDs.contains(where: {
+                        $0.displayName.caseInsensitiveCompare(peerID.displayName) == .orderedSame
+                    })
                 let wasConnected = self.knownConnected.contains(peerID)
-                self.invitedPeerIDs.remove(peerID)
+                let wasConnecting = self.connectingPeerIDs.contains(peerID)
+                self.clearHandshakeState(for: peerID)
                 if wasConnected {
                     self.knownConnected.remove(peerID)
                     self.metrics.disconnectCount += 1
-                    // B2: A connected peer dropped — try to re-invite them.
                     self.scheduleReconnect(peerID)
-                }
-                if wasInviting && !wasConnected {
-                    self.retryInviteIfNeeded(peerID)
+                } else if wasConnecting || wasInviting {
+                    // Failed ICE / invite — cool down before the next attempt.
+                    self.markInviteCooldown(peerID.displayName)
+                    if wasInviting && !wasConnected {
+                        self.retryInviteIfNeeded(peerID)
+                    }
                 }
             case .connecting:
-                break
-            case .connected:
+                self.connectingPeerIDs.insert(peerID)
                 self.invitedPeerIDs.remove(peerID)
+                self.zeroPeersSince = nil
+            case .connected:
+                self.clearHandshakeState(for: peerID)
                 self.inviteAttempts[peerID] = 0
+                self.inviteCooldownUntil.removeValue(forKey: peerID.displayName)
                 self.recentlyDroppedPeers.removeValue(forKey: peerID)
                 self.browseRetryCount = 0
                 self.zeroPeersSince = nil
